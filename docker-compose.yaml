@@ -1,0 +1,8 @@
+version: "3.9"
+
+# docker-compose exec cass_cluster cqlsh
+services:
+  cass_cluster:
+    image: cassandra:4.0
+    ports:
+      - "9042:9042"
