@@ -44,7 +44,7 @@ func ListShweets(c *gin.Context) {
 		m = map[string]interface{}{}
 	}
 
-	users := Users.Enrich2(userUUIDs)
+	users := Users.Enrich(userUUIDs)
 	var Shweets []Shweet
 	for _, shweet := range shweets {
 		shweet.User = users[shweet.UserID.String()]
@@ -81,7 +81,7 @@ func GetShweet(c *gin.Context) {
 		}
 	}
 
-	users := Users.Enrich2([]gocql.UUID{shweet.UserID})
+	users := Users.Enrich([]gocql.UUID{shweet.UserID})
 	if len(users) > 0 {
 		shweet.User = users[shweet.UserID.String()]
 	}

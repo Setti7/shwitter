@@ -8,7 +8,7 @@ import (
 )
 
 func CreateUser(c *gin.Context) {
-	var user User2
+	var user User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -27,11 +27,11 @@ func CreateUser(c *gin.Context) {
 }
 
 func ListUsers(c *gin.Context) {
-	var users []User2
+	var users []User
 	m := map[string]interface{}{}
 	iterable := Cassandra.Session.Query("SELECT id, username, name, email, bio FROM users").Iter()
 	for iterable.MapScan(m) {
-		users = append(users, User2{
+		users = append(users, User{
 			ID:       m["id"].(gocql.UUID),
 			Username: m["username"].(string),
 			Name:     m["name"].(string),
@@ -45,7 +45,7 @@ func ListUsers(c *gin.Context) {
 }
 
 func GetUser(c *gin.Context) {
-	var user User2
+	var user User
 	var found bool = false
 
 	uuid, err := gocql.ParseUUID(c.Param("uuid"))
@@ -58,7 +58,7 @@ func GetUser(c *gin.Context) {
 		iterable := Cassandra.Session.Query(query, uuid).Consistency(gocql.One).Iter()
 		for iterable.MapScan(m) {
 			found = true
-			user = User2{
+			user = User{
 				ID:       m["id"].(gocql.UUID),
 				Username: m["username"].(string),
 				Name:     m["name"].(string),

@@ -2,7 +2,7 @@ package Users
 
 import "github.com/gocql/gocql"
 
-type User2 struct {
+type User struct {
 	ID       gocql.UUID `json:"id"`
 	Username string     `json:"username" binding:"required"`
 	Name     string     `json:"name" binding:"required"`

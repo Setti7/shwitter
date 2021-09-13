@@ -6,10 +6,10 @@ import (
 )
 
 type Shweet struct {
-	ID      gocql.UUID   `json:"id"`
-	UserID  gocql.UUID   `json:"user_id"`
-	Message string       `json:"message"`
-	User    *Users.User2 `json:"user,omitempty"`
+	ID      gocql.UUID  `json:"id"`
+	UserID  gocql.UUID  `json:"user_id"`
+	Message string      `json:"message"`
+	User    *Users.User `json:"user,omitempty"`
 }
 
 type CreationShweet struct {
