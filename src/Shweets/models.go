@@ -1,10 +1,18 @@
 package Shweets
 
-import "github.com/gocql/gocql"
+import (
+	"github.com/Setti7/shwitter/Users"
+	"github.com/gocql/gocql"
+)
 
 type Shweet struct {
-	ID       gocql.UUID `json:"id"`
-	UserID   gocql.UUID `json:"user_id"`
-	UserName string     `json:"user_name"`
-	Message  string     `json:"message"`
+	ID      gocql.UUID   `json:"id"`
+	UserID  gocql.UUID   `json:"user_id"`
+	Message string       `json:"message"`
+	User    *Users.User2 `json:"user,omitempty"`
+}
+
+type CreationShweet struct {
+	UserID  gocql.UUID `json:"user_id"`
+	Message string     `json:"message"`
 }
