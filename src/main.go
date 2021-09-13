@@ -3,34 +3,39 @@
 package main
 
 import (
-    "encoding/json"
-    "github.com/Setti7/shwitter/Cassandra"
-    "github.com/Setti7/shwitter/Messages"
-    "github.com/Setti7/shwitter/Users"
-    "github.com/gorilla/mux"
-    "log"
-    "net/http"
+	"github.com/Setti7/shwitter/Cassandra"
+	"github.com/Setti7/shwitter/Messages"
+	"github.com/Setti7/shwitter/Shweets"
+	"github.com/Setti7/shwitter/Users"
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/mux"
+	"log"
+	"net/http"
 )
 
-type heartbeatResponse struct {
-    Status string `json:"status"`
-    Code   int    `json:"code"`
-}
-
 func main() {
-    CassandraSession := Cassandra.Session
-    defer CassandraSession.Close()
-    router := mux.NewRouter().StrictSlash(true)
-    router.HandleFunc("/", heartbeat)
-    router.HandleFunc("/users/", Users.Post).Methods("POST")
-    router.HandleFunc("/users/", Users.Get).Methods("GET")
-    router.HandleFunc("/users/{uuid}", Users.GetOne).Methods("GET")
-    router.HandleFunc("/messages/", Messages.Post).Methods("POST")
-    router.HandleFunc("/messages/", Messages.Get).Methods("GET")
-    router.HandleFunc("/messages/{uuid}", Messages.GetOne).Methods("GET")
-    log.Fatal(http.ListenAndServe(":8080", router))
+	Cassandra.ConnectToCassandra()
+	session := Cassandra.Session
+	defer session.Close()
+
+	r := gin.Default()
+	r.GET("/healthz", heartbeat)
+	r.POST("/shweets/", Shweets.CreateShweet)
+	r.GET("/shweets/", Shweets.ListShweets)
+	r.GET("/shweets/:uuid", Shweets.GetShweets)
+
+	log.Fatal(r.Run())
+
+	router := mux.NewRouter().StrictSlash(true)
+	router.HandleFunc("/users/", Users.Post).Methods("POST")
+	router.HandleFunc("/users/", Users.Get).Methods("GET")
+	router.HandleFunc("/users/{uuid}", Users.GetOne).Methods("GET")
+	router.HandleFunc("/messages/", Messages.Post).Methods("POST")
+	router.HandleFunc("/messages/", Messages.Get).Methods("GET")
+	router.HandleFunc("/messages/{uuid}", Messages.GetOne).Methods("GET")
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
-func heartbeat(w http.ResponseWriter, r *http.Request) {
-    json.NewEncoder(w).Encode(heartbeatResponse{Status: "OK", Code: 200})
+func heartbeat(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"status": "OK"})
 }
