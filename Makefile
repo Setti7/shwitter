@@ -1,6 +1,9 @@
 cass_driver = cassandra://127.0.0.1:9042/shwitter
 
-journey_cmd = journey --url $(cass_driver) --path ./src/migrations
+journey_cmd = journey --url $(cass_driver) --path ./shwitter/migrations
+
+dev: up
+	cd src && air
 
 up:
 	docker-compose up -d
