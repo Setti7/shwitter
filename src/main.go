@@ -20,9 +20,14 @@ func main() {
 
 	r := gin.Default()
 	r.GET("/healthz", heartbeat)
+
 	r.POST("/shweets/", Shweets.CreateShweet)
 	r.GET("/shweets/", Shweets.ListShweets)
-	r.GET("/shweets/:uuid", Shweets.GetShweets)
+	r.GET("/shweets/:uuid", Shweets.GetShweet)
+
+	r.POST("/users/", Users.CreateUser)
+	r.GET("/users/", Users.ListUsers)
+	r.GET("/users/:uuid", Users.GetUser)
 
 	log.Fatal(r.Run())
 

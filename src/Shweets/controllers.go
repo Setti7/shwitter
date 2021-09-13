@@ -7,6 +7,8 @@ import (
 	"net/http"
 )
 
+// TODO: enrich with user name and username
+
 func CreateShweet(c *gin.Context) {
 	var shweet Shweet
 	if err := c.ShouldBindJSON(&shweet); err != nil {
@@ -42,7 +44,7 @@ func ListShweets(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": shweets})
 }
 
-func GetShweets(c *gin.Context) {
+func GetShweet(c *gin.Context) {
 
 	var shweet Shweet
 	var found bool = false

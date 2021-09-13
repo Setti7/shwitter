@@ -1,0 +1,1 @@
+ALTER TABLE shwitter.users DROP username;
