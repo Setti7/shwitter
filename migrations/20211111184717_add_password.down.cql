@@ -1,1 +1,0 @@
-ALTER TABLE shwitter.users DROP password;

@@ -11,7 +11,7 @@ import (
 // TODO Add auth using this: https://www.sohamkamani.com/golang/password-authentication-and-storage/
 
 func SignUp(c *gin.Context) {
-	var creds Credentials
+	var creds CreateUserCredentials
 	if err := c.ShouldBindJSON(&creds); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -29,11 +29,35 @@ func SignUp(c *gin.Context) {
 		return
 	}
 
+	// Check if the username is already taken and immediately after create an entry for it,
+	// so race conditions are harder to happen.
+	// FIXME: use redis as a distributed lock so it never happens.
+	m := map[string]interface{}{}
+	found := false
+	query := "SELECT username FROM credentials WHERE username=? LIMIT 1"
+	iterable := Cassandra.Session.Query(query, creds.Username).Consistency(gocql.One).Iter()
+	for iterable.MapScan(m) {
+		found = true
+	}
+	if found {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This username is already taken."})
+		return
+	}
+
 	// All checks passed! We can create the user now
+	// First create the credentials
 	uuid := gocql.TimeUUID()
 	if err := Cassandra.Session.Query(
-		`INSERT INTO users (id, username, name, email, password) VALUES (?, ?, ?, ?, ?)`,
-		uuid, creds.Username, creds.Name, creds.Email, hashedPassword).Exec(); err != nil {
+		`INSERT INTO credentials (username, password, userId) VALUES (?, ?, ?)`,
+		creds.Username, hashedPassword, uuid).Exec(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Then, finally, create the user
+	if err := Cassandra.Session.Query(
+		`INSERT INTO users (id, username, name, email) VALUES (?, ?, ?, ?)`,
+		uuid, creds.Username, creds.Name, creds.Email).Exec(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

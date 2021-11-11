@@ -7,7 +7,8 @@ import (
 	"regexp"
 )
 
-func (c *Credentials) validateCreds() error {
+// TODO validate all other fields
+func (c *CreateUserCredentials) validateCreds() error {
 	// Validate email address
 	_, err := mail.ParseAddress(c.Email)
 	if err != nil {
