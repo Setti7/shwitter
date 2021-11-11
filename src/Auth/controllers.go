@@ -2,6 +2,7 @@ package Auth
 
 import (
 	"context"
+	"fmt"
 	"github.com/Setti7/shwitter/Cassandra"
 	"github.com/Setti7/shwitter/Redis"
 	"github.com/bsm/redislock"
@@ -30,7 +31,7 @@ func SignUp(c *gin.Context) {
 	// Get a lock for this username
 	// If we failed to get the lock, this means another user creation process with this username is already running.
 	ctx := context.Background()
-	lock, err := Redis.Locker.Obtain(ctx, creds.Username, 100*time.Millisecond, nil)
+	lock, err := Redis.Locker.Obtain(ctx, fmt.Sprintf("SignUp::%s", creds.Username), 150*time.Millisecond, nil)
 
 	if err == redislock.ErrNotObtained {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Please try again in some seconds."})
