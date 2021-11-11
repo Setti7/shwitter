@@ -6,3 +6,9 @@ services:
     image: cassandra:4.0
     ports:
       - "9042:9042"
+
+  redis:
+    image: redis:alpine
+    command: redis-server
+    ports:
+      - "6379:6379"

@@ -1,11 +1,15 @@
 package Auth
 
 import (
+	"context"
 	"github.com/Setti7/shwitter/Cassandra"
+	"github.com/Setti7/shwitter/Redis"
+	"github.com/bsm/redislock"
 	"github.com/gin-gonic/gin"
 	"github.com/gocql/gocql"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
+	"time"
 )
 
 // TODO Add auth using this: https://www.sohamkamani.com/golang/password-authentication-and-storage/
@@ -23,24 +27,31 @@ func SignUp(c *gin.Context) {
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(creds.Password), 10)
-	if err != nil {
+	// Get a lock for this username
+	// If we failed to get the lock, this means another user creation process with this username is already running.
+	ctx := context.Background()
+	lock, err := Redis.Locker.Obtain(ctx, creds.Username, 100*time.Millisecond, nil)
+
+	if err == redislock.ErrNotObtained {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This username is already taken."})
+		return
+	} else if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	defer lock.Release(ctx)
 
-	// Check if the username is already taken and immediately after create an entry for it,
-	// so race conditions are harder to happen.
-	// FIXME: use redis as a distributed lock so it never happens.
-	m := map[string]interface{}{}
-	found := false
+	// Check if the username is already taken
 	query := "SELECT username FROM credentials WHERE username=? LIMIT 1"
 	iterable := Cassandra.Session.Query(query, creds.Username).Consistency(gocql.One).Iter()
-	for iterable.MapScan(m) {
-		found = true
-	}
-	if found {
+	if iterable.NumRows() > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "This username is already taken."})
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(creds.Password), 10)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

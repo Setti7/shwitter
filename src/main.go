@@ -5,6 +5,7 @@ package main
 import (
 	"github.com/Setti7/shwitter/Auth"
 	"github.com/Setti7/shwitter/Cassandra"
+	"github.com/Setti7/shwitter/Redis"
 	"github.com/Setti7/shwitter/Shweets"
 	"github.com/Setti7/shwitter/Users"
 	"github.com/gin-gonic/gin"
@@ -13,6 +14,8 @@ import (
 )
 
 func main() {
+	Redis.ConnectToRedis()
+
 	Cassandra.ConnectToCassandra()
 	session := Cassandra.Session
 	defer session.Close()
