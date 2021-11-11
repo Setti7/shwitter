@@ -3,6 +3,7 @@
 package main
 
 import (
+	"github.com/Setti7/shwitter/Auth"
 	"github.com/Setti7/shwitter/Cassandra"
 	"github.com/Setti7/shwitter/Shweets"
 	"github.com/Setti7/shwitter/Users"
@@ -23,9 +24,10 @@ func main() {
 	r.GET("/shweets/", Shweets.ListShweets)
 	r.GET("/shweets/:uuid", Shweets.GetShweet)
 
-	r.POST("/users/", Users.CreateUser)
 	r.GET("/users/", Users.ListUsers)
 	r.GET("/users/:uuid", Users.GetUser)
+
+	r.POST("/auth/signup", Auth.SignUp)
 
 	log.Fatal(r.Run())
 }

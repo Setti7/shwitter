@@ -7,25 +7,6 @@ import (
 	"net/http"
 )
 
-func CreateUser(c *gin.Context) {
-	var user User
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	uuid := gocql.TimeUUID()
-
-	if err := Cassandra.Session.Query(
-		`INSERT INTO users (id, username, name, email, bio) VALUES (?, ?, ?, ?, ?)`,
-		uuid, user.Username, user.Name, user.Email, user.Bio).Exec(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"user": uuid})
-}
-
 func ListUsers(c *gin.Context) {
 	var users = make([]User, 0)
 	m := map[string]interface{}{}
