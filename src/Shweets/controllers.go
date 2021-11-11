@@ -28,15 +28,15 @@ func CreateShweet(c *gin.Context) {
 }
 
 func ListShweets(c *gin.Context) {
-	var shweets []Shweet
+	var raw_shweets []Shweet
 	var userUUIDs []gocql.UUID
 
 	m := map[string]interface{}{}
-	iterable := Cassandra.Session.Query("SELECT id, user_id, message FROM shweets").Iter()
+	iterable := Cassandra.Session.Query("SELECT id, user_id, message FROM raw_shweets").Iter()
 	for iterable.MapScan(m) {
 		userUUID := m["user_id"].(gocql.UUID)
 		userUUIDs = append(userUUIDs, userUUID)
-		shweets = append(shweets, Shweet{
+		raw_shweets = append(raw_shweets, Shweet{
 			ID:      m["id"].(gocql.UUID),
 			UserID:  userUUID,
 			Message: m["message"].(string),
@@ -45,19 +45,18 @@ func ListShweets(c *gin.Context) {
 	}
 
 	users := Users.Enrich(userUUIDs)
-	var Shweets []Shweet
-	for _, shweet := range shweets {
+	var enriched_shweets = make([]Shweet, 0)
+	for _, shweet := range raw_shweets {
 		shweet.User = users[shweet.UserID.String()]
-		Shweets = append(Shweets, shweet)
+		enriched_shweets = append(enriched_shweets, shweet)
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": Shweets})
+	c.JSON(http.StatusOK, gin.H{"data": enriched_shweets})
 }
 
 func GetShweet(c *gin.Context) {
-
 	var shweet Shweet
-	var found bool = false
+	var found = false
 
 	uuid, err := gocql.ParseUUID(c.Param("uuid"))
 	if err != nil {

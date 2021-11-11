@@ -27,7 +27,7 @@ func CreateUser(c *gin.Context) {
 }
 
 func ListUsers(c *gin.Context) {
-	var users []User
+	var users = make([]User, 0)
 	m := map[string]interface{}{}
 	iterable := Cassandra.Session.Query("SELECT id, username, name, email, bio FROM users").Iter()
 	for iterable.MapScan(m) {
@@ -46,7 +46,7 @@ func ListUsers(c *gin.Context) {
 
 func GetUser(c *gin.Context) {
 	var user User
-	var found bool = false
+	var found = false
 
 	uuid, err := gocql.ParseUUID(c.Param("uuid"))
 	if err != nil {
