@@ -33,7 +33,7 @@ func SignUp(c *gin.Context) {
 	lock, err := Redis.Locker.Obtain(ctx, creds.Username, 100*time.Millisecond, nil)
 
 	if err == redislock.ErrNotObtained {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "This username is already taken."})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Please try again in some seconds."})
 		return
 	} else if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
