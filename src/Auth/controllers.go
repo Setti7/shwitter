@@ -13,7 +13,12 @@ import (
 	"time"
 )
 
-// TODO Add auth using this: https://www.sohamkamani.com/golang/password-authentication-and-storage/
+// TODO: add auth module
+//  [X] Add auth using this: https://www.sohamkamani.com/golang/password-authentication-and-storage/
+//  [ ] Add cookie/session persistence using this: https://www.sohamkamani.com/golang/session-based-authentication/
+//  [ ] Use a better architecture like:
+// 		- https://github.com/VanceLongwill/gotodos/blob/master/handlers/todo.go/
+//		- https://github.com/photoprism/photoprism
 
 func SignUp(c *gin.Context) {
 	var creds CreateUserCredentials
@@ -75,4 +80,37 @@ func SignUp(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"user": uuid})
+}
+
+func SignIn(c *gin.Context) {
+	var creds SignInCredentials
+	if err := c.ShouldBindJSON(&creds); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Get the username and password
+	query := "SELECT username, userid, password FROM credentials WHERE username=? LIMIT 1"
+	iterable := Cassandra.Session.Query(query, creds.Username).Consistency(gocql.One).Iter()
+	if iterable.NumRows() == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username/password."})
+		return
+	}
+
+	var password string
+	var userId gocql.UUID
+
+	m := map[string]interface{}{}
+	for iterable.MapScan(m) {
+		userId = m["userid"].(gocql.UUID)
+		password = m["password"].(string)
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(creds.Password)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username/password."})
+		return
+	} else {
+		c.JSON(http.StatusOK, gin.H{"userId": userId})
+		return
+	}
 }

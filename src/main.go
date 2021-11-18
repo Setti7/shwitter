@@ -31,6 +31,7 @@ func main() {
 	r.GET("/users/:uuid", Users.GetUser)
 
 	r.POST("/auth/signup", Auth.SignUp)
+	r.POST("/auth/signin", Auth.SignIn)
 
 	log.Fatal(r.Run())
 }
