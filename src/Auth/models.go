@@ -1,5 +1,7 @@
 package Auth
 
+import "github.com/gocql/gocql"
+
 type CreateUserCredentials struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
@@ -8,6 +10,29 @@ type CreateUserCredentials struct {
 }
 
 type SignInCredentials struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Token    string `json:"token"`
+}
+
+type DBCredentials struct {
+	Username string
+	Password string
+	UserId   gocql.UUID
+}
+
+func (c SignInCredentials) HasToken() bool {
+	return c.Token != ""
+}
+
+func (c SignInCredentials) HasUsername() bool {
+	return c.Username != ""
+}
+
+func (c SignInCredentials) HasPassword() bool {
+	return c.Password != ""
+}
+
+func (c SignInCredentials) HasCredentials() bool {
+	return c.HasUsername() && c.HasPassword()
 }

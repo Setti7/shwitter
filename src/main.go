@@ -31,6 +31,9 @@ func main() {
 	r.POST("/auth/signup", Auth.SignUp)
 	r.POST("/auth/signin", Auth.SignIn)
 
+	r.POST("/sessions/", api.CreateSession)
+	r.GET("/sessions/", api.GetSession)
+
 	log.Fatal(r.Run())
 }
 

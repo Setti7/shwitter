@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/Setti7/shwitter/entities"
+	"github.com/Setti7/shwitter/entity"
 	"github.com/Setti7/shwitter/query"
 	"github.com/gin-gonic/gin"
 	"github.com/gocql/gocql"
@@ -9,7 +9,7 @@ import (
 )
 
 func CreateShweet(c *gin.Context) {
-	var input entities.CreationShweet
+	var input entity.CreationShweet
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -35,7 +35,7 @@ func ListShweets(c *gin.Context) {
 
 	// Enrich the shweets with the users info
 	users := query.EnrichUsers(userUUIDs)
-	var enriched_shweets = make([]entities.Shweet, 0)
+	var enriched_shweets = make([]entity.Shweet, 0)
 	for _, shweet := range rawShweets {
 		shweet.User = users[shweet.UserID.String()]
 		enriched_shweets = append(enriched_shweets, shweet)

@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/Setti7/shwitter/entities"
+	"github.com/Setti7/shwitter/entity"
 	"github.com/Setti7/shwitter/service"
 	"github.com/gin-gonic/gin"
 	"github.com/gocql/gocql"
@@ -9,11 +9,11 @@ import (
 )
 
 func ListUsers(c *gin.Context) {
-	var users = make([]entities.User, 0)
+	var users = make([]entity.User, 0)
 	m := map[string]interface{}{}
 	iterable := service.Cassandra().Query("SELECT id, username, name, email, bio FROM users").Iter()
 	for iterable.MapScan(m) {
-		users = append(users, entities.User{
+		users = append(users, entity.User{
 			ID:       m["id"].(gocql.UUID),
 			Username: m["username"].(string),
 			Name:     m["name"].(string),
@@ -27,7 +27,7 @@ func ListUsers(c *gin.Context) {
 }
 
 func GetUser(c *gin.Context) {
-	var user entities.User
+	var user entity.User
 	var found = false
 
 	uuid, err := gocql.ParseUUID(c.Param("uuid"))
@@ -40,7 +40,7 @@ func GetUser(c *gin.Context) {
 		iterable := service.Cassandra().Query(query, uuid).Consistency(gocql.One).Iter()
 		for iterable.MapScan(m) {
 			found = true
-			user = entities.User{
+			user = entity.User{
 				ID:       m["id"].(gocql.UUID),
 				Username: m["username"].(string),
 				Name:     m["name"].(string),
