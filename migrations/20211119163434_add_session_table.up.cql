@@ -1,7 +1,7 @@
 CREATE TABLE sessions
 (
-    sess_token text, // TODO: change to varchar?
+    id         text,
     userId     UUID,
     expiration timestamp,
-    PRIMARY KEY (sess_token)
+    PRIMARY KEY (id)
 );

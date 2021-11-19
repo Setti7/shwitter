@@ -21,7 +21,7 @@ func CreateSession(c *gin.Context) {
 
 	if input.HasToken() {
 		// TODO
-		c.JSON(http.StatusNotImplemented, gin.H{"error": "Token session is not available."})
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "This authentication method is not available."})
 		return
 	} else if input.HasCredentials() {
 		creds, err := query.GetUserCredentials(input.Username)

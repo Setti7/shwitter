@@ -9,44 +9,44 @@ import (
 	"time"
 )
 
-func GetSession(sessToken string) (sess entity.Session, err error) {
-	if sessToken == "" {
+func GetSession(id string) (sess entity.Session, err error) {
+	if id == "" {
 		return sess, errors.New("Invalid session.")
 	}
 
-	query := "SELECT sess_token, userid, expiration FROM sessions WHERE sess_token=? LIMIT 1"
+	query := "SELECT id, userid, expiration FROM sessions WHERE id=? LIMIT 1"
 	m := map[string]interface{}{}
-	cassErr := service.Cassandra().Query(query, sessToken).MapScan(m)
+	cassErr := service.Cassandra().Query(query, id).MapScan(m)
 	if cassErr != nil {
 		return sess, errors.New("Session not found.")
 	}
 
-	sess.Token = sessToken
+	sess.ID = id
 	sess.UserId = m["userid"].(gocql.UUID)
 	sess.Expiration = m["expiration"].(time.Time)
 	return sess, nil
 }
 
 func CreateSession(userId gocql.UUID) (sess entity.Session, err error) {
-	token := session.NewID()
+	id := session.NewID()
 	expiration := time.Now().Add(time.Hour * 24 * 90) // Session expires in 90 days
 
 	if cassErr := service.Cassandra().Query(
-		"INSERT INTO sessions (sess_token, userid, expiration) VALUES (?, ?, ?)",
-		token, userId, expiration).Exec(); err != nil {
+		"INSERT INTO sessions (id, userid, expiration) VALUES (?, ?, ?)",
+		id, userId, expiration).Exec(); err != nil {
 		return sess, cassErr
 	}
 
-	sess.Token = token
+	sess.ID = id
 	sess.UserId = userId
 	sess.Expiration = expiration
 
 	return sess, nil
 }
 
-func DeleteSession(sessToken string) (err error) {
-	query := "DELETE FROM sessions WHERE sess_token=?"
-	cassErr := service.Cassandra().Query(query, sessToken).Exec()
+func DeleteSession(id string) (err error) {
+	query := "DELETE FROM sessions WHERE id=?"
+	cassErr := service.Cassandra().Query(query, id).Exec()
 	if cassErr != nil {
 		return errors.New("Could not delete sssion.")
 	}

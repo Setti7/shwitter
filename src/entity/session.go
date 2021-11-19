@@ -6,7 +6,7 @@ import (
 )
 
 type Session struct {
-	Token      string // TODO: change to id
+	ID         string
 	UserId     gocql.UUID
 	Expiration time.Time
 }
