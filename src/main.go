@@ -4,6 +4,7 @@ package main
 
 import (
 	"github.com/Setti7/shwitter/api"
+	"github.com/Setti7/shwitter/middleware"
 	"github.com/Setti7/shwitter/service"
 	"github.com/gin-gonic/gin"
 	"log"
@@ -18,18 +19,22 @@ func main() {
 	defer service.CleanUp()
 
 	r := gin.Default()
+	r.Use(middleware.CurrentUserMiddleware())
+
 	r.GET("/healthz", heartbeat)
 
 	r.POST("/shweets/", api.CreateShweet)
 	r.GET("/shweets/", api.ListShweets)
 	r.GET("/shweets/:id", api.GetShweet)
 
+	// TODO acl
 	r.GET("/users/", api.ListUsers)
 	r.GET("/users/:uuid", api.GetUser)
 	r.POST("/users/", api.CreateUser)
+	r.GET("/users/me", api.GetCurrentUser)
 
 	r.POST("/sessions/", api.CreateSession)
-	r.GET("/sessions/", api.GetSession)
+	// TODO delete session
 
 	log.Fatal(r.Run())
 }

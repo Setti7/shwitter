@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/Setti7/shwitter/entity"
+	"github.com/Setti7/shwitter/form"
 	"github.com/Setti7/shwitter/query"
 	"github.com/gin-gonic/gin"
 	"github.com/gocql/gocql"
@@ -9,13 +10,19 @@ import (
 )
 
 func CreateShweet(c *gin.Context) {
-	var input entity.CreationShweet
-	if err := c.ShouldBindJSON(&input); err != nil {
+	var f form.CreateShweet
+	if err := c.BindJSON(&f); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	shweetId, err := query.CreateShweet(input)
+	user, ok := c.Get("user")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "You need to authenticate first."})
+		return
+	}
+
+	shweetId, err := query.CreateShweet(user.(entity.User).ID, f)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

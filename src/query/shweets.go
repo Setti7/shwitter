@@ -3,6 +3,7 @@ package query
 import (
 	"errors"
 	"github.com/Setti7/shwitter/entity"
+	"github.com/Setti7/shwitter/form"
 	"github.com/Setti7/shwitter/service"
 	"github.com/gocql/gocql"
 )
@@ -29,12 +30,12 @@ func GetShweetByID(id string) (shweet entity.Shweet, err error) {
 	return shweet, nil
 }
 
-func CreateShweet(creationShweet entity.CreationShweet) (string, error) {
+func CreateShweet(userID gocql.UUID, f form.CreateShweet) (string, error) {
 	uuid := gocql.TimeUUID()
 
 	if err := service.Cassandra().Query(
 		`INSERT INTO shweets (id, user_id, message) VALUES (?, ?, ?)`,
-		uuid, creationShweet.UserID, creationShweet.Message).Exec(); err != nil {
+		uuid, userID, f.Message).Exec(); err != nil {
 		return "", err
 	}
 	return uuid.String(), nil

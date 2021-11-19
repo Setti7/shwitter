@@ -7,7 +7,9 @@ import (
 	"github.com/gocql/gocql"
 )
 
-func EnrichUsers(uuids []gocql.UUID) (userMap map[string]*entity.User) {
+func EnrichUsers(uuids []gocql.UUID) map[string]*entity.User {
+	userMap := make(map[string]*entity.User)
+
 	if len(uuids) > 0 {
 		m := map[string]interface{}{}
 		iterable := service.Cassandra().Query("SELECT id, username, name FROM users WHERE id IN ?", uuids).Iter()
@@ -25,11 +27,11 @@ func EnrichUsers(uuids []gocql.UUID) (userMap map[string]*entity.User) {
 	return userMap
 }
 
-func CreateUser(uuid gocql.UUID, input form.CreateUserCredentials) (user entity.User, err error) {
+func CreateUser(uuid gocql.UUID, f form.CreateUserCredentials) (user entity.User, err error) {
 	user.ID = uuid
-	user.Username = input.Username
-	user.Name = input.Name
-	user.Email = input.Email
+	user.Username = f.Username
+	user.Name = f.Name
+	user.Email = f.Email
 
 	if err := service.Cassandra().Query(
 		`INSERT INTO users (id, username, name, email) VALUES (?, ?, ?, ?)`,

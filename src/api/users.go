@@ -65,13 +65,13 @@ func GetUser(c *gin.Context) {
 }
 
 func CreateUser(c *gin.Context) {
-	var input form.CreateUserCredentials
-	if err := c.BindJSON(&input); err != nil {
+	var f form.CreateUserCredentials
+	if err := c.BindJSON(&f); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	err := input.ValidateCreds()
+	err := f.ValidateCreds()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -80,7 +80,7 @@ func CreateUser(c *gin.Context) {
 	// Get a lock for this username
 	// If we failed to get the lock, this means another user creation process with this username is already running.
 	ctx := context.Background()
-	lock, err := service.Lock().Obtain(ctx, fmt.Sprintf("SignUp::%s", input.Username), 150*time.Millisecond, nil)
+	lock, err := service.Lock().Obtain(ctx, fmt.Sprintf("SignUp::%s", f.Username), 150*time.Millisecond, nil)
 
 	if err == redislock.ErrNotObtained {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Please try again in some seconds."})
@@ -92,7 +92,7 @@ func CreateUser(c *gin.Context) {
 	defer lock.Release(ctx)
 
 	// Check if the username is already taken
-	_, err = query.GetUserCredentials(input.Username)
+	_, err = query.GetUserCredentials(f.Username)
 	if err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "This username is already taken."})
 		return
@@ -102,17 +102,27 @@ func CreateUser(c *gin.Context) {
 	}
 
 	// Save the user credentials
-	uuid, err := query.SaveCredentials(input.Username, input.Password)
+	uuid, err := query.SaveCredentials(f.Username, f.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
 		return
 	}
 
 	// Then, finally, save the user
-	user, err := query.CreateUser(uuid, input)
+	user, err := query.CreateUser(uuid, f)
 	if err != nil {
 		log.Fatal(fmt.Sprintf("A user credential was created, but it was not possible to save its profile. "+
 			"Please delete the credential with id=%s.", uuid.String()))
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": user})
+}
+
+func GetCurrentUser(c *gin.Context) {
+	user, ok := c.Get("user")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "You need to authenticate first."})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": user})

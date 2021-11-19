@@ -8,7 +8,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func GetUserCredentials(username string) (creds form.DBCredentials, err error) {
+func GetUserCredentials(username string) (creds form.Credentials, err error) {
 	query := "SELECT username, userid, password FROM credentials WHERE username=? LIMIT 1"
 	m := map[string]interface{}{}
 	cassErr := service.Cassandra().Query(query, username).MapScan(m)

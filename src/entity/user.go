@@ -6,8 +6,8 @@ import (
 
 type User struct {
 	ID       gocql.UUID `json:"id"`
-	Username string     `json:"username" binding:"required"`
-	Name     string     `json:"name" binding:"required"`
-	Email    string     `json:"email,omitempty" binding:"required"`
+	Username string     `json:"username"`
+	Name     string     `json:"name"`
+	Email    string     `json:"email,omitempty"`
 	Bio      string     `json:"bio,omitempty"`
 }

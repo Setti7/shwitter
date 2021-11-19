@@ -8,40 +8,32 @@ import (
 	"regexp"
 )
 
-// TODO: add more forms here as needed
+type Credentials struct {
+	Username string     `json:"username"`
+	Password string     `json:"password"`
+	UserId   gocql.UUID `json:"user_id"`
+	Token    string     `json:"token"`
+}
+
 type CreateUserCredentials struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
-	Name     string `json:"name" binding:"required"`
-	Email    string `json:"email" binding:"required"`
+	Credentials
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
-type SignInCredentials struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Token    string `json:"token"`
-}
-
-// TODO change this
-type DBCredentials struct {
-	Username string
-	Password string
-	UserId   gocql.UUID
-}
-
-func (c SignInCredentials) HasToken() bool {
+func (c *Credentials) HasToken() bool {
 	return c.Token != ""
 }
 
-func (c SignInCredentials) HasUsername() bool {
+func (c *Credentials) HasUsername() bool {
 	return c.Username != ""
 }
 
-func (c SignInCredentials) HasPassword() bool {
+func (c *Credentials) HasPassword() bool {
 	return c.Password != ""
 }
 
-func (c SignInCredentials) HasCredentials() bool {
+func (c *Credentials) HasCredentials() bool {
 	return c.HasUsername() && c.HasPassword()
 }
 
