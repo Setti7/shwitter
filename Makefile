@@ -23,6 +23,9 @@ create-migration:
 migrate-up:
 	$(journey_cmd) migrate up
 
+migrate-down:
+	$(journey_cmd) migrate down
+
 clear-db:
 	$(journey_cmd) migrate down
 	$(journey_cmd) migrate up

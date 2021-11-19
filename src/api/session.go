@@ -48,15 +48,30 @@ func CreateSession(c *gin.Context) {
 	}
 }
 
+func ListUserSessions(c *gin.Context) {
+	user, ok := session.GetUserOrAbort(c)
+	if !ok {
+		return
+	}
+
+	sessions, err := query.ListSessionsForUser(user.ID.String())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": sessions})
+
+}
+
 func DeleteSession(c *gin.Context) {
 	// Get the session user
-	_, ok := session.GetUserOrAbort(c)
+	user, ok := session.GetUserOrAbort(c)
 	if !ok {
 		return
 	}
 
 	s, _ := c.Get("session")
-	err := query.DeleteSession(s.(entity.Session).ID)
+	err := query.DeleteSession(user.ID.String(), s.(entity.Session).ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
 		return

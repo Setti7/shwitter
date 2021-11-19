@@ -23,18 +23,19 @@ func main() {
 
 	r.GET("/healthz", heartbeat)
 
-	r.POST("/shweets/", api.CreateShweet)
-	r.GET("/shweets/", api.ListShweets)
+	r.POST("/shweets", api.CreateShweet)
+	r.GET("/shweets", api.ListShweets)
 	r.GET("/shweets/:id", api.GetShweet)
 
 	// TODO acl
-	r.GET("/users/", api.ListUsers)
+	r.GET("/users", api.ListUsers)
 	r.GET("/users/:uuid", api.GetUser)
-	r.POST("/users/", api.CreateUser)
+	r.POST("/users", api.CreateUser)
 	r.GET("/users/me", api.GetCurrentUser)
 
-	r.POST("/sessions/", api.CreateSession)
-	r.DELETE("/sessions/", api.DeleteSession)
+	r.POST("/sessions", api.CreateSession)
+	r.DELETE("/sessions", api.DeleteSession)
+	r.GET("/sessions", api.ListUserSessions)
 
 	log.Fatal(r.Run())
 }
