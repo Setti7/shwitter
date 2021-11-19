@@ -1,7 +1,6 @@
-package Shweets
+package api
 
 import (
-	"github.com/Setti7/shwitter/Users"
 	"github.com/Setti7/shwitter/entities"
 	"github.com/Setti7/shwitter/query"
 	"github.com/gin-gonic/gin"
@@ -35,7 +34,7 @@ func ListShweets(c *gin.Context) {
 	}
 
 	// Enrich the shweets with the users info
-	users := Users.Enrich(userUUIDs)
+	users := query.EnrichUsers(userUUIDs)
 	var enriched_shweets = make([]entities.Shweet, 0)
 	for _, shweet := range rawShweets {
 		shweet.User = users[shweet.UserID.String()]
@@ -52,7 +51,7 @@ func GetShweet(c *gin.Context) {
 		return
 	}
 
-	users := Users.Enrich([]gocql.UUID{shweet.UserID})
+	users := query.EnrichUsers([]gocql.UUID{shweet.UserID})
 	if len(users) > 0 {
 		shweet.User = users[shweet.UserID.String()]
 	}

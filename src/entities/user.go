@@ -1,6 +1,8 @@
-package Users
+package entities
 
-import "github.com/gocql/gocql"
+import (
+	"github.com/gocql/gocql"
+)
 
 type User struct {
 	ID       gocql.UUID `json:"id"`

@@ -6,8 +6,7 @@ import (
 	"github.com/Setti7/shwitter/Auth"
 	"github.com/Setti7/shwitter/Cassandra"
 	"github.com/Setti7/shwitter/Redis"
-	"github.com/Setti7/shwitter/Shweets"
-	"github.com/Setti7/shwitter/Users"
+	"github.com/Setti7/shwitter/api"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
@@ -23,12 +22,12 @@ func main() {
 	r := gin.Default()
 	r.GET("/healthz", heartbeat)
 
-	r.POST("/shweets/", Shweets.CreateShweet)
-	r.GET("/shweets/", Shweets.ListShweets)
-	r.GET("/shweets/:id", Shweets.GetShweet)
+	r.POST("/shweets/", api.CreateShweet)
+	r.GET("/shweets/", api.ListShweets)
+	r.GET("/shweets/:id", api.GetShweet)
 
-	r.GET("/users/", Users.ListUsers)
-	r.GET("/users/:uuid", Users.GetUser)
+	r.GET("/users/", api.ListUsers)
+	r.GET("/users/:uuid", api.GetUser)
 
 	r.POST("/auth/signup", Auth.SignUp)
 	r.POST("/auth/signin", Auth.SignIn)
