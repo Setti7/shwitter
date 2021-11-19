@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/Setti7/shwitter/Cassandra"
 	"github.com/Setti7/shwitter/entities"
+	"github.com/Setti7/shwitter/service"
 	"github.com/gin-gonic/gin"
 	"github.com/gocql/gocql"
 	"net/http"
@@ -11,7 +11,7 @@ import (
 func ListUsers(c *gin.Context) {
 	var users = make([]entities.User, 0)
 	m := map[string]interface{}{}
-	iterable := Cassandra.Session.Query("SELECT id, username, name, email, bio FROM users").Iter()
+	iterable := service.Cassandra().Query("SELECT id, username, name, email, bio FROM users").Iter()
 	for iterable.MapScan(m) {
 		users = append(users, entities.User{
 			ID:       m["id"].(gocql.UUID),
@@ -37,7 +37,7 @@ func GetUser(c *gin.Context) {
 	} else {
 		m := map[string]interface{}{}
 		query := "SELECT id, username, name, email, bio FROM users WHERE id=? LIMIT 1"
-		iterable := Cassandra.Session.Query(query, uuid).Consistency(gocql.One).Iter()
+		iterable := service.Cassandra().Query(query, uuid).Consistency(gocql.One).Iter()
 		for iterable.MapScan(m) {
 			found = true
 			user = entities.User{

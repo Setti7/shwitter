@@ -2,8 +2,8 @@ package query
 
 import (
 	"errors"
-	"github.com/Setti7/shwitter/Cassandra"
 	"github.com/Setti7/shwitter/entities"
+	"github.com/Setti7/shwitter/service"
 	"github.com/gocql/gocql"
 )
 
@@ -15,7 +15,7 @@ func GetShweetByID(id string) (shweet entities.Shweet, err error) {
 
 	m := map[string]interface{}{}
 	query := "SELECT id, user_id, message FROM shweets WHERE id=? LIMIT 1"
-	err = Cassandra.Session.Query(query, uuid).Consistency(gocql.One).MapScan(m)
+	err = service.Cassandra().Query(query, uuid).Consistency(gocql.One).MapScan(m)
 	if err != nil {
 		return shweet, errors.New("This shweet could not be found.")
 	}
@@ -32,7 +32,7 @@ func GetShweetByID(id string) (shweet entities.Shweet, err error) {
 func CreateShweet(creationShweet entities.CreationShweet) (string, error) {
 	uuid := gocql.TimeUUID()
 
-	if err := Cassandra.Session.Query(
+	if err := service.Cassandra().Query(
 		`INSERT INTO shweets (id, user_id, message) VALUES (?, ?, ?)`,
 		uuid, creationShweet.UserID, creationShweet.Message).Exec(); err != nil {
 		return "", err
@@ -42,7 +42,7 @@ func CreateShweet(creationShweet entities.CreationShweet) (string, error) {
 
 func ListShweets() (shweets []entities.Shweet) {
 	m := map[string]interface{}{}
-	iterable := Cassandra.Session.Query("SELECT id, user_id, message FROM shweets").Iter()
+	iterable := service.Cassandra().Query("SELECT id, user_id, message FROM shweets").Iter()
 	for iterable.MapScan(m) {
 		shweets = append(shweets, entities.Shweet{
 			ID:      m["id"].(gocql.UUID),

@@ -3,8 +3,7 @@ package Auth
 import (
 	"context"
 	"fmt"
-	"github.com/Setti7/shwitter/Cassandra"
-	"github.com/Setti7/shwitter/Redis"
+	"github.com/Setti7/shwitter/service"
 	"github.com/bsm/redislock"
 	"github.com/gin-gonic/gin"
 	"github.com/gocql/gocql"
@@ -15,7 +14,7 @@ import (
 
 // TODO: add auth module
 //  [X] Add auth using this: https://www.sohamkamani.com/golang/password-authentication-and-storage/
-//  [ ] Add cookie/session persistence using this: https://www.sohamkamani.com/golang/session-based-authentication/
+//  [ ] Add jwt session persistence using this: https://www.sohamkamani.com/golang/session-based-authentication/
 //  [ ] Use a better architecture like:
 // 		- https://github.com/VanceLongwill/gotodos/blob/master/handlers/todo.go/
 //		- https://github.com/photoprism/photoprism
@@ -36,7 +35,7 @@ func SignUp(c *gin.Context) {
 	// Get a lock for this username
 	// If we failed to get the lock, this means another user creation process with this username is already running.
 	ctx := context.Background()
-	lock, err := Redis.Locker.Obtain(ctx, fmt.Sprintf("SignUp::%s", creds.Username), 150*time.Millisecond, nil)
+	lock, err := service.Lock().Obtain(ctx, fmt.Sprintf("SignUp::%s", creds.Username), 150*time.Millisecond, nil)
 
 	if err == redislock.ErrNotObtained {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Please try again in some seconds."})
@@ -49,7 +48,7 @@ func SignUp(c *gin.Context) {
 
 	// Check if the username is already taken
 	query := "SELECT username FROM credentials WHERE username=? LIMIT 1"
-	iterable := Cassandra.Session.Query(query, creds.Username).Consistency(gocql.One).Iter()
+	iterable := service.Cassandra().Query(query, creds.Username).Consistency(gocql.One).Iter()
 	if iterable.NumRows() > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "This username is already taken."})
 		return
@@ -64,7 +63,7 @@ func SignUp(c *gin.Context) {
 	// All checks passed! We can create the user now
 	// First create the credentials
 	uuid := gocql.TimeUUID()
-	if err := Cassandra.Session.Query(
+	if err := service.Cassandra().Query(
 		`INSERT INTO credentials (username, password, userId) VALUES (?, ?, ?)`,
 		creds.Username, hashedPassword, uuid).Exec(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -72,7 +71,7 @@ func SignUp(c *gin.Context) {
 	}
 
 	// Then, finally, create the user
-	if err := Cassandra.Session.Query(
+	if err := service.Cassandra().Query(
 		`INSERT INTO users (id, username, name, email) VALUES (?, ?, ?, ?)`,
 		uuid, creds.Username, creds.Name, creds.Email).Exec(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -91,7 +90,7 @@ func SignIn(c *gin.Context) {
 
 	// Get the username and password
 	query := "SELECT username, userid, password FROM credentials WHERE username=? LIMIT 1"
-	iterable := Cassandra.Session.Query(query, creds.Username).Consistency(gocql.One).Iter()
+	iterable := service.Cassandra().Query(query, creds.Username).Consistency(gocql.One).Iter()
 	if iterable.NumRows() == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username/password."})
 		return

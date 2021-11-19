@@ -4,9 +4,8 @@ package main
 
 import (
 	"github.com/Setti7/shwitter/Auth"
-	"github.com/Setti7/shwitter/Cassandra"
-	"github.com/Setti7/shwitter/Redis"
 	"github.com/Setti7/shwitter/api"
+	"github.com/Setti7/shwitter/service"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
@@ -16,11 +15,8 @@ import (
 // TODO: add tests
 
 func main() {
-	Redis.ConnectToRedis()
-
-	Cassandra.ConnectToCassandra()
-	session := Cassandra.Session
-	defer session.Close()
+	service.Init()
+	defer service.CleanUp()
 
 	r := gin.Default()
 	r.GET("/healthz", heartbeat)
