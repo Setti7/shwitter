@@ -1,4 +1,4 @@
-package Shweets
+package entities
 
 import (
 	"github.com/Setti7/shwitter/Users"

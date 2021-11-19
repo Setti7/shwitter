@@ -25,7 +25,7 @@ func main() {
 
 	r.POST("/shweets/", Shweets.CreateShweet)
 	r.GET("/shweets/", Shweets.ListShweets)
-	r.GET("/shweets/:uuid", Shweets.GetShweet)
+	r.GET("/shweets/:id", Shweets.GetShweet)
 
 	r.GET("/users/", Users.ListUsers)
 	r.GET("/users/:uuid", Users.GetUser)

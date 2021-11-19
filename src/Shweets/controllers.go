@@ -3,10 +3,15 @@ package Shweets
 import (
 	"github.com/Setti7/shwitter/Cassandra"
 	"github.com/Setti7/shwitter/Users"
+	"github.com/Setti7/shwitter/entities"
+	"github.com/Setti7/shwitter/query"
 	"github.com/gin-gonic/gin"
 	"github.com/gocql/gocql"
 	"net/http"
 )
+
+type Shweet entities.Shweet
+type CreationShweet entities.CreationShweet
 
 func CreateShweet(c *gin.Context) {
 	var input CreationShweet
@@ -32,7 +37,7 @@ func ListShweets(c *gin.Context) {
 	var userUUIDs []gocql.UUID
 
 	m := map[string]interface{}{}
-	iterable := Cassandra.Session.Query("SELECT id, user_id, message FROM raw_shweets").Iter()
+	iterable := Cassandra.Session.Query("SELECT id, user_id, message FROM shweets").Iter()
 	for iterable.MapScan(m) {
 		userUUID := m["user_id"].(gocql.UUID)
 		userUUIDs = append(userUUIDs, userUUID)
@@ -55,29 +60,10 @@ func ListShweets(c *gin.Context) {
 }
 
 func GetShweet(c *gin.Context) {
-	var shweet Shweet
-	var found = false
-
-	uuid, err := gocql.ParseUUID(c.Param("uuid"))
+	shweet, err := query.GetShweetByID(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
-	} else {
-		m := map[string]interface{}{}
-		query := "SELECT id, user_id, message FROM shweets WHERE id=? LIMIT 1"
-		iterable := Cassandra.Session.Query(query, uuid).Consistency(gocql.One).Iter()
-		for iterable.MapScan(m) {
-			found = true
-			shweet = Shweet{
-				ID:      m["id"].(gocql.UUID),
-				UserID:  m["user_id"].(gocql.UUID),
-				Message: m["message"].(string),
-			}
-		}
-		if !found {
-			c.JSON(http.StatusNotFound, gin.H{"error": "This shweet couldn't be found."})
-			return
-		}
 	}
 
 	users := Users.Enrich([]gocql.UUID{shweet.UserID})
