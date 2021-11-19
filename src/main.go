@@ -12,6 +12,9 @@ import (
 	"net/http"
 )
 
+// TODO: try https://github.com/scylladb/gocqlx
+// TODO: add tests
+
 func main() {
 	Redis.ConnectToRedis()
 

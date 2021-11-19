@@ -11,6 +11,7 @@ type Shweet struct {
 	User    *User      `json:"user,omitempty"`
 }
 
+// TODO: do like photoprism and create a Form module which will handle struct parsing/creation/validation
 type CreationShweet struct {
 	UserID  gocql.UUID `json:"user_id"`
 	Message string     `json:"message"`
