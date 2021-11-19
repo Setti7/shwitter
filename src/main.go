@@ -34,7 +34,7 @@ func main() {
 	r.GET("/users/me", api.GetCurrentUser)
 
 	r.POST("/sessions/", api.CreateSession)
-	// TODO delete session
+	r.DELETE("/sessions/", api.DeleteSession)
 
 	log.Fatal(r.Run())
 }

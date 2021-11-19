@@ -4,6 +4,7 @@ import (
 	"github.com/Setti7/shwitter/entity"
 	"github.com/Setti7/shwitter/form"
 	"github.com/Setti7/shwitter/query"
+	"github.com/Setti7/shwitter/session"
 	"github.com/gin-gonic/gin"
 	"github.com/gocql/gocql"
 	"net/http"
@@ -16,13 +17,12 @@ func CreateShweet(c *gin.Context) {
 		return
 	}
 
-	user, ok := c.Get("user")
+	user, ok := session.GetUserOrAbort(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "You need to authenticate first."})
 		return
 	}
 
-	shweetId, err := query.CreateShweet(user.(entity.User).ID, f)
+	shweetId, err := query.CreateShweet(user.ID, f)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

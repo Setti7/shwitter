@@ -46,9 +46,9 @@ func CreateSession(userId gocql.UUID) (sess entity.Session, err error) {
 
 func DeleteSession(id string) (err error) {
 	query := "DELETE FROM sessions WHERE id=?"
-	cassErr := service.Cassandra().Query(query, id).Exec()
+	cassErr := service.Cassandra().Query(query, id).Iter().Close()
 	if cassErr != nil {
-		return errors.New("Could not delete sssion.")
+		return errors.New("Could not delete session.")
 	}
 	return nil
 }

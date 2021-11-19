@@ -7,6 +7,7 @@ import (
 	"github.com/Setti7/shwitter/form"
 	"github.com/Setti7/shwitter/query"
 	"github.com/Setti7/shwitter/service"
+	"github.com/Setti7/shwitter/session"
 	"github.com/bsm/redislock"
 	"github.com/gin-gonic/gin"
 	"github.com/gocql/gocql"
@@ -119,9 +120,8 @@ func CreateUser(c *gin.Context) {
 }
 
 func GetCurrentUser(c *gin.Context) {
-	user, ok := c.Get("user")
+	user, ok := session.GetUserOrAbort(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "You need to authenticate first."})
 		return
 	}
 

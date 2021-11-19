@@ -1,8 +1,10 @@
 package api
 
 import (
+	"github.com/Setti7/shwitter/entity"
 	"github.com/Setti7/shwitter/form"
 	"github.com/Setti7/shwitter/query"
+	"github.com/Setti7/shwitter/session"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
@@ -43,5 +45,20 @@ func CreateSession(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"data": sess})
 			return
 		}
+	}
+}
+
+func DeleteSession(c *gin.Context) {
+	// Get the session user
+	_, ok := session.GetUserOrAbort(c)
+	if !ok {
+		return
+	}
+
+	s, _ := c.Get("session")
+	err := query.DeleteSession(s.(entity.Session).ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
+		return
 	}
 }
