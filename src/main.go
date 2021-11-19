@@ -29,12 +29,12 @@ func main() {
 
 	// TODO acl
 	r.GET("/users", api.ListUsers)
-	r.GET("/users/:uuid", api.GetUser)
+	r.GET("/users/:id", api.GetUser)
 	r.POST("/users", api.CreateUser)
 	r.GET("/users/me", api.GetCurrentUser)
 
 	r.POST("/sessions", api.CreateSession)
-	r.DELETE("/sessions", api.DeleteSession)
+	r.DELETE("/sessions/:id", api.DeleteSession)
 	r.GET("/sessions", api.ListUserSessions)
 
 	log.Fatal(r.Run())

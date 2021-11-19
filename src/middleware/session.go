@@ -19,10 +19,10 @@ func CurrentUserMiddleware() gin.HandlerFunc {
 			sess, err := query.GetSession(userID, sessID)
 
 			if err != nil {
-				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Could not get session."})
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "This session was not found."})
 				return
 			} else if sess.IsExpired() {
-				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Your session has expired."})
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Your session has expired."})
 				return
 			}
 

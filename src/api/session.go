@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/Setti7/shwitter/entity"
 	"github.com/Setti7/shwitter/form"
 	"github.com/Setti7/shwitter/query"
 	"github.com/Setti7/shwitter/session"
@@ -70,8 +69,8 @@ func DeleteSession(c *gin.Context) {
 		return
 	}
 
-	s, _ := c.Get("session")
-	err := query.DeleteSession(user.ID.String(), s.(entity.Session).ID)
+	sessID := c.Param("id")
+	err := query.DeleteSession(user.ID.String(), sessID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
 		return

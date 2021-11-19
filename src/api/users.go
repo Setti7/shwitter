@@ -38,14 +38,14 @@ func GetUser(c *gin.Context) {
 	var user entity.User
 	var found = false
 
-	uuid, err := gocql.ParseUUID(c.Param("uuid"))
+	uuid, err := gocql.ParseUUID(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	} else {
 		m := map[string]interface{}{}
-		query := "SELECT id, username, name, email, bio FROM users WHERE id=? LIMIT 1"
-		iterable := service.Cassandra().Query(query, uuid).Consistency(gocql.One).Iter()
+		q := "SELECT id, username, name, email, bio FROM users WHERE id=? LIMIT 1"
+		iterable := service.Cassandra().Query(q, uuid).Consistency(gocql.One).Iter()
 		for iterable.MapScan(m) {
 			found = true
 			user = entity.User{
