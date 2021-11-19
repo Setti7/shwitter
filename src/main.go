@@ -3,7 +3,6 @@
 package main
 
 import (
-	"github.com/Setti7/shwitter/Auth"
 	"github.com/Setti7/shwitter/api"
 	"github.com/Setti7/shwitter/service"
 	"github.com/gin-gonic/gin"
@@ -27,9 +26,7 @@ func main() {
 
 	r.GET("/users/", api.ListUsers)
 	r.GET("/users/:uuid", api.GetUser)
-
-	r.POST("/auth/signup", Auth.SignUp)
-	r.POST("/auth/signin", Auth.SignIn)
+	r.POST("/users/", api.CreateUser)
 
 	r.POST("/sessions/", api.CreateSession)
 	r.GET("/sessions/", api.GetSession)

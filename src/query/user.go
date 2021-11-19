@@ -2,6 +2,7 @@ package query
 
 import (
 	"github.com/Setti7/shwitter/entity"
+	"github.com/Setti7/shwitter/form"
 	"github.com/Setti7/shwitter/service"
 	"github.com/gocql/gocql"
 )
@@ -22,4 +23,18 @@ func EnrichUsers(uuids []gocql.UUID) (userMap map[string]*entity.User) {
 	}
 
 	return userMap
+}
+
+func CreateUser(uuid gocql.UUID, input form.CreateUserCredentials) (user entity.User, err error) {
+	user.ID = uuid
+	user.Username = input.Username
+	user.Name = input.Name
+	user.Email = input.Email
+
+	if err := service.Cassandra().Query(
+		`INSERT INTO users (id, username, name, email) VALUES (?, ?, ?, ?)`,
+		user.ID, user.Username, user.Name, user.Email).Exec(); err != nil {
+		return user, err
+	}
+	return user, nil
 }

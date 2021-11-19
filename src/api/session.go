@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/Setti7/shwitter/Auth"
+	"github.com/Setti7/shwitter/form"
 	"github.com/Setti7/shwitter/query"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -13,7 +13,7 @@ func abortInvalidUsernameAndPassword(c *gin.Context) {
 }
 
 func CreateSession(c *gin.Context) {
-	var input Auth.SignInCredentials
+	var input form.SignInCredentials
 	if err := c.BindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -46,6 +46,7 @@ func CreateSession(c *gin.Context) {
 	}
 }
 
+// TODO make this a middleware
 func GetSession(c *gin.Context) {
 	id := SessionID(c)
 	if id == "" {
@@ -55,10 +56,17 @@ func GetSession(c *gin.Context) {
 
 	sess, err := query.GetSession(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Session not found."})
-	} else {
-		c.JSON(http.StatusOK, gin.H{"data": sess})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "You need to be authenticated."})
+		return
 	}
+
+	user, err := query.GetUserByID(sess.UserId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": user})
 }
 
 // Gets session id from HTTP header.

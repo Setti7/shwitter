@@ -6,7 +6,7 @@ import (
 )
 
 type Session struct {
-	ID         string
-	UserId     gocql.UUID
-	Expiration time.Time
+	ID         string     `json:"id"`
+	UserId     gocql.UUID `json:"user_id"`
+	Expiration time.Time  `json:"expiration"`
 }
