@@ -7,9 +7,7 @@ import (
 	"github.com/gocql/gocql"
 )
 
-type Shweet = entities.Shweet
-
-func GetShweetByID(id string) (shweet Shweet, err error) {
+func GetShweetByID(id string) (shweet entities.Shweet, err error) {
 	uuid, err := gocql.ParseUUID(id)
 	if err != nil {
 		return shweet, errors.New("Invalid shweet id.")
@@ -22,11 +20,37 @@ func GetShweetByID(id string) (shweet Shweet, err error) {
 		return shweet, errors.New("This shweet could not be found.")
 	}
 
-	shweet = Shweet{
+	shweet = entities.Shweet{
 		ID:      m["id"].(gocql.UUID),
 		UserID:  m["user_id"].(gocql.UUID),
 		Message: m["message"].(string),
 	}
 
 	return shweet, nil
+}
+
+func CreateShweet(creationShweet entities.CreationShweet) (string, error) {
+	uuid := gocql.TimeUUID()
+
+	if err := Cassandra.Session.Query(
+		`INSERT INTO shweets (id, user_id, message) VALUES (?, ?, ?)`,
+		uuid, creationShweet.UserID, creationShweet.Message).Exec(); err != nil {
+		return "", err
+	}
+	return uuid.String(), nil
+}
+
+func ListShweets() (shweets []entities.Shweet) {
+	m := map[string]interface{}{}
+	iterable := Cassandra.Session.Query("SELECT id, user_id, message FROM shweets").Iter()
+	for iterable.MapScan(m) {
+		shweets = append(shweets, entities.Shweet{
+			ID:      m["id"].(gocql.UUID),
+			UserID:  m["user_id"].(gocql.UUID),
+			Message: m["message"].(string),
+		})
+		m = map[string]interface{}{}
+	}
+
+	return shweets
 }
