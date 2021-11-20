@@ -18,10 +18,9 @@ func ListUsers(c *gin.Context) {
 	users, err := query.ListUsers()
 	if err != nil {
 		AbortResponseUnexpectedError(c)
-		return
+	} else {
+		c.JSON(http.StatusOK, gin.H{"data": users})
 	}
-
-	c.JSON(http.StatusOK, gin.H{"data": users})
 }
 
 // Get a user by its id
@@ -29,7 +28,7 @@ func GetUser(c *gin.Context) {
 	id := c.Param("id")
 	user, err := query.GetUserByID(id)
 
-	if err == query.ErrNotFound {
+	if err == query.ErrNotFound || err == query.ErrInvalidID {
 		AbortResponseNotFound(c)
 	} else if err != nil {
 		AbortResponseUnexpectedError(c)
@@ -51,8 +50,6 @@ func FollowUser(c *gin.Context) {
 		AbortResponseNotFound(c)
 	} else if err != nil {
 		AbortResponseUnexpectedError(c)
-	} else {
-		c.Status(http.StatusOK)
 	}
 }
 
@@ -63,12 +60,12 @@ func UnFollowUser(c *gin.Context) {
 	}
 
 	followUserID := c.Param("id")
-
 	err := query.UnFollowUser(user.ID, followUserID)
-	if err != nil {
+
+	if err == query.ErrNotFound {
+		AbortResponseNotFound(c)
+	} else if err != nil {
 		AbortResponseUnexpectedError(c)
-	} else {
-		c.Status(http.StatusOK)
 	}
 }
 
@@ -86,10 +83,9 @@ func ListFriendsOrFollowers(isFriend bool) gin.HandlerFunc {
 
 		if err != nil {
 			AbortResponseUnexpectedError(c)
-			return
+		} else {
+			c.JSON(http.StatusOK, gin.H{"data": friendsOrFollowers})
 		}
-
-		c.JSON(http.StatusOK, gin.H{"data": friendsOrFollowers})
 	}
 }
 
@@ -134,10 +130,9 @@ func CreateUser(c *gin.Context) {
 	user, err := query.CreateNewUserWithCredentials(f)
 	if err != nil {
 		AbortResponseUnexpectedError(c)
-		return
+	} else {
+		c.JSON(http.StatusOK, gin.H{"data": user})
 	}
-
-	c.JSON(http.StatusOK, gin.H{"data": user})
 }
 
 func GetCurrentUser(c *gin.Context) {

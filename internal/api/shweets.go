@@ -24,10 +24,9 @@ func CreateShweet(c *gin.Context) {
 	shweetId, err := query.CreateShweet(user.ID, f)
 	if err != nil {
 		AbortResponseUnexpectedError(c)
-		return
+	} else {
+		c.JSON(http.StatusOK, gin.H{"data": shweetId})
 	}
-
-	c.JSON(http.StatusOK, gin.H{"data": shweetId})
 }
 
 func ListShweets(c *gin.Context) {

@@ -12,8 +12,6 @@ func abortInvalidUsernameAndPassword(c *gin.Context) {
 	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username/password."})
 }
 
-// TODO: handle errors better for user on api module
-
 func CreateSession(c *gin.Context) {
 	var f form.Credentials
 	if err := c.BindJSON(&f); err != nil {
@@ -38,10 +36,9 @@ func CreateSession(c *gin.Context) {
 		sess, err := query.CreateSession(userID)
 		if err != nil {
 			AbortResponseUnexpectedError(c)
-			return
+		} else {
+			c.JSON(http.StatusOK, gin.H{"data": sess})
 		}
-
-		c.JSON(http.StatusOK, gin.H{"data": sess})
 	}
 }
 
@@ -54,10 +51,9 @@ func ListUserSessions(c *gin.Context) {
 	sessions, err := query.ListSessionsForUser(user.ID)
 	if err != nil {
 		AbortResponseUnexpectedError(c)
-		return
+	} else {
+		c.JSON(http.StatusOK, gin.H{"data": sessions})
 	}
-
-	c.JSON(http.StatusOK, gin.H{"data": sessions})
 }
 
 func DeleteSession(c *gin.Context) {
