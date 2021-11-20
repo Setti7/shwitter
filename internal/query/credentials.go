@@ -1,8 +1,8 @@
 package query
 
 import (
-	"github.com/Setti7/shwitter/form"
-	"github.com/Setti7/shwitter/service"
+	"github.com/Setti7/shwitter/internal/form"
+	"github.com/Setti7/shwitter/internal/service"
 	"github.com/gocql/gocql"
 	"golang.org/x/crypto/bcrypt"
 )

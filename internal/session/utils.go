@@ -1,7 +1,7 @@
 package session
 
 import (
-	"github.com/Setti7/shwitter/entity"
+	"github.com/Setti7/shwitter/internal/entity"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )

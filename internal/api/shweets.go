@@ -1,10 +1,10 @@
 package api
 
 import (
-	"github.com/Setti7/shwitter/entity"
-	"github.com/Setti7/shwitter/form"
-	"github.com/Setti7/shwitter/query"
-	"github.com/Setti7/shwitter/session"
+	"github.com/Setti7/shwitter/internal/entity"
+	"github.com/Setti7/shwitter/internal/form"
+	"github.com/Setti7/shwitter/internal/query"
+	"github.com/Setti7/shwitter/internal/session"
 	"github.com/gin-gonic/gin"
 	"github.com/gocql/gocql"
 	"net/http"

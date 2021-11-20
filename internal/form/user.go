@@ -3,7 +3,7 @@ package form
 import (
 	"errors"
 	"fmt"
-	"github.com/Setti7/shwitter/entity"
+	"github.com/Setti7/shwitter/internal/entity"
 	"github.com/gocql/gocql"
 	"net/mail"
 	"regexp"

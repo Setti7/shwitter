@@ -2,9 +2,10 @@ package query
 
 import (
 	"errors"
-	"github.com/Setti7/shwitter/entity"
-	"github.com/Setti7/shwitter/service"
-	"github.com/Setti7/shwitter/session"
+	"github.com/Setti7/shwitter/internal/entity"
+	"github.com/Setti7/shwitter/internal/service"
+	"github.com/Setti7/shwitter/internal/session"
+
 	"github.com/gocql/gocql"
 	"time"
 )

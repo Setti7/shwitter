@@ -1,17 +1,23 @@
-// Source:
-// https://getstream.io/blog/building-a-performant-api-using-go-and-cassandra/
-package main
+package commands
 
 import (
-	"github.com/Setti7/shwitter/api"
-	"github.com/Setti7/shwitter/middleware"
-	"github.com/Setti7/shwitter/service"
+	"github.com/Setti7/shwitter/internal/api"
+	"github.com/Setti7/shwitter/internal/middleware"
+	"github.com/Setti7/shwitter/internal/service"
 	"github.com/gin-gonic/gin"
+	"github.com/urfave/cli/v2"
 	"log"
 	"net/http"
 )
 
-func main() {
+var StartCommand = cli.Command{
+	Name:    "start",
+	Aliases: []string{"up"},
+	Usage:   "Starts the web server",
+	Action:  startAction,
+}
+
+func startAction(_ *cli.Context) error {
 	service.Init()
 	defer service.CleanUp()
 
@@ -27,7 +33,6 @@ func main() {
 	// TODO: add pagination to ListUsers, ListFollowers and ListFriends
 	// TODO: add timeline and userline
 	// TODO: add tests
-	// TODO: create a CLI with the commands, like photoprism
 	r.GET("/users", api.ListUsers)
 	r.GET("/users/:id", api.GetUser)
 	r.POST("/users", api.CreateUser)
@@ -42,6 +47,8 @@ func main() {
 	r.GET("/sessions", api.ListUserSessions)
 
 	log.Fatal(r.Run())
+
+	return nil
 }
 
 func heartbeat(c *gin.Context) {

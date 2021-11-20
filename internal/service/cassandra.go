@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/Setti7/shwitter/config"
+	"github.com/Setti7/shwitter/internal/config"
 	"github.com/gocql/gocql"
 	"sync"
 )

@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/Setti7/shwitter/query"
+	"github.com/Setti7/shwitter/internal/query"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
