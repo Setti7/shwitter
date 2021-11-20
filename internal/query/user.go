@@ -121,36 +121,29 @@ func ListFriends(userID gocql.UUID) (followers []*form.FriendOrFollower, err err
 	return listFriendsOrFollowers(userID, true)
 }
 
-func FollowUser(userID gocql.UUID, followerID gocql.UUID) (err error) {
+func FollowUser(userID gocql.UUID, followerID gocql.UUID) error {
+	batch := service.Cassandra().NewBatch(gocql.LoggedBatch)
+
 	// From the userID perspective: userID (me) is following followerID
-	if err = service.Cassandra().Query(
-		`INSERT INTO friends (userid, friend_id, since) VALUES (?, ?, ?)`,
-		userID, followerID, time.Now()).Exec(); err != nil {
-		return err
-	}
+	batch.Query(
+		"INSERT INTO friends (userid, friend_id, since) VALUES (?, ?, ?)",
+		userID, followerID, time.Now())
 
 	// From the followerID perspective: followerID (me) is being followed by userID
-	if err = service.Cassandra().Query(
-		`INSERT INTO followers (userid, follower_id, since) VALUES (?, ?, ?)`,
-		followerID, userID, time.Now()).Exec(); err != nil {
-		return err
-	}
+	batch.Query("INSERT INTO followers (userid, follower_id, since) VALUES (?, ?, ?)",
+		followerID, userID, time.Now())
 
-	return nil
+	return service.Cassandra().ExecuteBatch(batch)
 }
 
 func UnFollowUser(userID gocql.UUID, followerID gocql.UUID) (err error) {
+	batch := service.Cassandra().NewBatch(gocql.LoggedBatch)
+
 	// From the userID perspective: userID (me) is NOT following followerID anymore
-	if err = service.Cassandra().Query(
-		`DELETE FROM friends WHERE userid=? AND friend_id=?`, userID, followerID).Exec(); err != nil {
-		return err
-	}
+	batch.Query("DELETE FROM friends WHERE userid=? AND friend_id=?", userID, followerID)
 
 	// From the followerID perspective: followerID (me) is NOT being followed by userID anymore
-	if err = service.Cassandra().Query(
-		`DELETE FROM followers WHERE userid=? AND follower_id=?`, followerID, userID).Exec(); err != nil {
-		return err
-	}
+	batch.Query("DELETE FROM followers WHERE userid=? AND follower_id=?", followerID, userID)
 
-	return nil
+	return service.Cassandra().ExecuteBatch(batch)
 }

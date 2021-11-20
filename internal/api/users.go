@@ -65,7 +65,9 @@ func GetUser(c *gin.Context) {
 }
 
 func FollowUser(c *gin.Context) {
-	// TODO: make sure we cannot follow a user twice
+	// TODO:
+	//   [X] make sure we cannot follow a user twice
+	//   [ ] make sure we can only follow existent users
 	user, ok := session.GetUserOrAbort(c)
 	if !ok {
 		return
