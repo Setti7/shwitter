@@ -5,6 +5,7 @@ import (
 	"github.com/Setti7/shwitter/internal/form"
 	"github.com/Setti7/shwitter/internal/service"
 	"github.com/gocql/gocql"
+	"golang.org/x/crypto/bcrypt"
 	"time"
 )
 
@@ -45,18 +46,29 @@ func EnrichUsers(uuids []gocql.UUID) map[string]*entity.User {
 	return userMap
 }
 
-func CreateUser(uuid gocql.UUID, f form.CreateUserCredentials) (user entity.User, err error) {
+func CreateNewUserWithCredentials(f form.CreateUserCredentials) (user entity.User, err error) {
+	uuid := gocql.TimeUUID()
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(f.Password), 10)
+	if err != nil {
+		return user, err
+	}
+
 	user.ID = uuid
 	user.Username = f.Username
 	user.Name = f.Name
 	user.Email = f.Email
 
-	if err = service.Cassandra().Query(
-		`INSERT INTO users (id, username, name, email) VALUES (?, ?, ?, ?)`,
-		user.ID, user.Username, user.Name, user.Email).Exec(); err != nil {
-		return user, err
-	}
-	return user, nil
+	batch := service.Cassandra().NewBatch(gocql.LoggedBatch)
+
+	batch.Query("INSERT INTO credentials (username, password, userId) VALUES (?, ?, ?)",
+		f.Username, hashedPassword, uuid)
+	batch.Query(
+		"INSERT INTO users (id, username, name, email) VALUES (?, ?, ?, ?)",
+		user.ID, user.Username, user.Name, user.Email)
+
+	err = service.Cassandra().ExecuteBatch(batch)
+	return user, err
 }
 
 func listFriendsOrFollowers(userID gocql.UUID, useFriendsTable bool) (friendOrFollowers []*form.FriendOrFollower, err error) {

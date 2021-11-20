@@ -11,7 +11,6 @@ import (
 	"github.com/bsm/redislock"
 	"github.com/gin-gonic/gin"
 	"github.com/gocql/gocql"
-	"log"
 	"net/http"
 	"time"
 )
@@ -166,18 +165,11 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	// Save the user credentials
-	uuid, err := query.SaveCredentials(f.Username, f.Password)
+	// Save the user and its credentials
+	user, err := query.CreateNewUserWithCredentials(f)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
 		return
-	}
-
-	// Then, finally, save the user
-	user, err := query.CreateUser(uuid, f)
-	if err != nil {
-		log.Fatal(fmt.Sprintf("A user credential was created, but it was not possible to save its profile. "+
-			"Please delete the credential with id=%s.", uuid.String()))
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": user})
