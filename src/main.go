@@ -11,9 +11,6 @@ import (
 	"net/http"
 )
 
-// TODO: try https://github.com/scylladb/gocqlx
-// TODO: add tests
-
 func main() {
 	service.Init()
 	defer service.CleanUp()
@@ -27,7 +24,10 @@ func main() {
 	r.GET("/shweets", api.ListShweets)
 	r.GET("/shweets/:id", api.GetShweet)
 
-	// TODO acl
+	// TODO: add pagination to ListUsers, ListFollowers and ListFriends
+	// TODO: add timeline and userline
+	// TODO: add tests
+	// TODO: create a CLI with the commands, like photoprism
 	r.GET("/users", api.ListUsers)
 	r.GET("/users/:id", api.GetUser)
 	r.POST("/users", api.CreateUser)

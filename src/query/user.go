@@ -8,6 +8,23 @@ import (
 	"time"
 )
 
+func GetUserByID(id gocql.UUID) (user entity.User, err error) {
+	query := "SELECT id, username, email, name, bio FROM users WHERE id=? LIMIT 1"
+	m := map[string]interface{}{}
+	cassErr := service.Cassandra().Query(query, id).MapScan(m)
+	if cassErr != nil {
+		return user, cassErr
+	}
+
+	user.ID = m["id"].(gocql.UUID)
+	user.Username = m["username"].(string)
+	user.Email = m["email"].(string)
+	user.Name = m["name"].(string)
+	user.Bio = m["bio"].(string)
+
+	return user, nil
+}
+
 func EnrichUsers(uuids []gocql.UUID) map[string]*entity.User {
 	userMap := make(map[string]*entity.User)
 

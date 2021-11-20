@@ -1,7 +1,6 @@
 package query
 
 import (
-	"github.com/Setti7/shwitter/entity"
 	"github.com/Setti7/shwitter/form"
 	"github.com/Setti7/shwitter/service"
 	"github.com/gocql/gocql"
@@ -20,23 +19,6 @@ func GetUserCredentials(username string) (creds form.Credentials, err error) {
 	creds.Password = m["password"].(string)
 	creds.Username = username
 	return creds, nil
-}
-
-func GetUserByID(id gocql.UUID) (user entity.User, err error) {
-	query := "SELECT id, username, email, name, bio FROM users WHERE id=? LIMIT 1"
-	m := map[string]interface{}{}
-	cassErr := service.Cassandra().Query(query, id).MapScan(m)
-	if cassErr != nil {
-		return user, cassErr
-	}
-
-	user.ID = m["id"].(gocql.UUID)
-	user.Username = m["username"].(string)
-	user.Email = m["email"].(string)
-	user.Name = m["name"].(string)
-	user.Bio = m["bio"].(string)
-
-	return user, nil
 }
 
 func SaveCredentials(username string, password string) (gocql.UUID, error) {
