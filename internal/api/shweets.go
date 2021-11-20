@@ -3,8 +3,8 @@ package api
 import (
 	"github.com/Setti7/shwitter/internal/entity"
 	"github.com/Setti7/shwitter/internal/form"
+	"github.com/Setti7/shwitter/internal/middleware"
 	"github.com/Setti7/shwitter/internal/query"
-	"github.com/Setti7/shwitter/internal/session"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -16,7 +16,7 @@ func CreateShweet(c *gin.Context) {
 		return
 	}
 
-	user, ok := session.GetUserOrAbort(c)
+	user, ok := middleware.GetUserOrAbort(c)
 	if !ok {
 		return
 	}

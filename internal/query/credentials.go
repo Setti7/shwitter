@@ -1,7 +1,7 @@
 package query
 
 import (
-	"github.com/Setti7/shwitter/internal/form"
+	"github.com/Setti7/shwitter/internal/entity"
 	"github.com/Setti7/shwitter/internal/log"
 	"github.com/Setti7/shwitter/internal/service"
 	"github.com/gocql/gocql"
@@ -9,8 +9,8 @@ import (
 
 // Get the user Credentials
 //
-// Retturns ErrNotFound if the user was not found and ErrUnexpected on any other error.
-func GetUserCredentials(username string) (id string, creds form.Credentials, err error) {
+// Returns ErrNotFound if the user was not found and ErrUnexpected on any other error.
+func GetUserCredentials(username string) (id string, creds entity.Credentials, err error) {
 	query := "SELECT username, userid, password FROM credentials WHERE username=? LIMIT 1"
 	m := map[string]interface{}{}
 

@@ -73,7 +73,7 @@ func EnrichUsers(ids []string) (userMap map[string]*entity.User, err error) {
 // Create a new user with its credentials
 //
 // Returns ErrUnexpected on any errors.
-func CreateNewUserWithCredentials(f form.CreateUserCredentials) (user entity.User, err error) {
+func CreateNewUserWithCredentials(f form.CreateUserForm) (user entity.User, err error) {
 	uuid := gocql.TimeUUID()
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(f.Password), 10)
@@ -103,8 +103,8 @@ func CreateNewUserWithCredentials(f form.CreateUserCredentials) (user entity.Use
 	return user, err
 }
 
-func listFriendsOrFollowers(userID string, useFriendsTable bool) ([]*form.FriendOrFollower, error) {
-	friendOrFollowers := make([]*form.FriendOrFollower, 0)
+func listFriendsOrFollowers(userID string, useFriendsTable bool) ([]*entity.FriendOrFollower, error) {
+	friendOrFollowers := make([]*entity.FriendOrFollower, 0)
 	if userID == "" {
 		return friendOrFollowers, ErrInvalidID
 	}
@@ -127,7 +127,7 @@ func listFriendsOrFollowers(userID string, useFriendsTable bool) ([]*form.Friend
 			friendOrFollowerID = m["follower_id"].(gocql.UUID).String()
 		}
 
-		fof := &form.FriendOrFollower{
+		fof := &entity.FriendOrFollower{
 			UserID: friendOrFollowerID,
 			Since:  m["since"].(time.Time),
 		}
@@ -163,14 +163,14 @@ func listFriendsOrFollowers(userID string, useFriendsTable bool) ([]*form.Friend
 // List all followers of a given user
 //
 // Returns ErrInvalidID if the ID is empty and ErrUnexpected on any other errors.
-func ListFollowers(userID string) ([]*form.FriendOrFollower, error) {
+func ListFollowers(userID string) ([]*entity.FriendOrFollower, error) {
 	return listFriendsOrFollowers(userID, false)
 }
 
 // List all friends of a given user
 //
 // Returns ErrInvalidID if the ID is empty and ErrUnexpected on any other errors.
-func ListFriends(userID string) ([]*form.FriendOrFollower, error) {
+func ListFriends(userID string) ([]*entity.FriendOrFollower, error) {
 	return listFriendsOrFollowers(userID, true)
 }
 

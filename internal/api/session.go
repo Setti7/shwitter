@@ -1,9 +1,9 @@
 package api
 
 import (
-	"github.com/Setti7/shwitter/internal/form"
+	"github.com/Setti7/shwitter/internal/entity"
+	"github.com/Setti7/shwitter/internal/middleware"
 	"github.com/Setti7/shwitter/internal/query"
-	"github.com/Setti7/shwitter/internal/session"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -13,7 +13,7 @@ func abortInvalidUsernameAndPassword(c *gin.Context) {
 }
 
 func CreateSession(c *gin.Context) {
-	var f form.Credentials
+	var f entity.Credentials
 	if err := c.BindJSON(&f); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -28,7 +28,7 @@ func CreateSession(c *gin.Context) {
 			return
 		}
 
-		if creds.ComparePassword(f.Password) {
+		if !creds.Authenticate(f.Password) {
 			abortInvalidUsernameAndPassword(c)
 			return
 		}
@@ -43,7 +43,7 @@ func CreateSession(c *gin.Context) {
 }
 
 func ListUserSessions(c *gin.Context) {
-	user, ok := session.GetUserOrAbort(c)
+	user, ok := middleware.GetUserOrAbort(c)
 	if !ok {
 		return
 	}
@@ -58,7 +58,7 @@ func ListUserSessions(c *gin.Context) {
 
 func DeleteSession(c *gin.Context) {
 	// Get the session user
-	user, ok := session.GetUserOrAbort(c)
+	user, ok := middleware.GetUserOrAbort(c)
 	if !ok {
 		return
 	}

@@ -3,13 +3,13 @@ package api
 import (
 	"context"
 	"fmt"
+	"github.com/Setti7/shwitter/internal/entity"
 	"github.com/Setti7/shwitter/internal/form"
+	"github.com/Setti7/shwitter/internal/middleware"
 	"github.com/Setti7/shwitter/internal/query"
 	"github.com/Setti7/shwitter/internal/service"
-	"github.com/Setti7/shwitter/internal/session"
 	"github.com/bsm/redislock"
 	"github.com/gin-gonic/gin"
-	"github.com/gocql/gocql"
 	"net/http"
 	"time"
 )
@@ -38,7 +38,7 @@ func GetUser(c *gin.Context) {
 }
 
 func FollowUser(c *gin.Context) {
-	user, ok := session.GetUserOrAbort(c)
+	user, ok := middleware.GetUserOrAbort(c)
 	if !ok {
 		return
 	}
@@ -54,7 +54,7 @@ func FollowUser(c *gin.Context) {
 }
 
 func UnFollowUser(c *gin.Context) {
-	user, ok := session.GetUserOrAbort(c)
+	user, ok := middleware.GetUserOrAbort(c)
 	if !ok {
 		return
 	}
@@ -74,7 +74,7 @@ func ListFriendsOrFollowers(isFriend bool) gin.HandlerFunc {
 		var err error
 		userID := c.Param("id")
 
-		var friendsOrFollowers []*form.FriendOrFollower
+		var friendsOrFollowers []*entity.FriendOrFollower
 		if isFriend {
 			friendsOrFollowers, err = query.ListFriends(userID)
 		} else {
@@ -90,15 +90,15 @@ func ListFriendsOrFollowers(isFriend bool) gin.HandlerFunc {
 }
 
 func CreateUser(c *gin.Context) {
-	var f form.CreateUserCredentials
+	var f form.CreateUserForm
 	if err := c.BindJSON(&f); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	err := f.ValidateCreds()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	errs := f.Validate()
+	if !f.IsValid() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errs})
 		return
 	}
 
@@ -116,12 +116,12 @@ func CreateUser(c *gin.Context) {
 	}
 	defer lock.Release(ctx)
 
-	// Check if the username is already taken
+	// Check if the username is already taken (it must return ErrNotFound)
 	_, _, err = query.GetUserCredentials(f.Username)
 	if err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "This username is already taken."})
 		return
-	} else if err != gocql.ErrNotFound {
+	} else if err != query.ErrNotFound {
 		AbortResponseUnexpectedError(c)
 		return
 	}
@@ -136,7 +136,7 @@ func CreateUser(c *gin.Context) {
 }
 
 func GetCurrentUser(c *gin.Context) {
-	user, ok := session.GetUserOrAbort(c)
+	user, ok := middleware.GetUserOrAbort(c)
 	if !ok {
 		return
 	}
