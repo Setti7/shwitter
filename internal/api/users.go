@@ -91,14 +91,9 @@ func ListFriendsOrFollowers(isFriend bool) gin.HandlerFunc {
 
 func CreateUser(c *gin.Context) {
 	var f form.CreateUserForm
-	if err := c.BindJSON(&f); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
 
-	errs := f.Validate()
-	if !f.IsValid() {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errs})
+	errs := form.BindJSON(c, &f)
+	if errs != nil {
 		return
 	}
 

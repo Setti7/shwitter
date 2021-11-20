@@ -6,6 +6,7 @@ import (
 	"log"
 )
 
+// TODO add cassandra support to github.com/gin-contrib/sessions?
 func NewID() string {
 	b := make([]byte, 24)
 
