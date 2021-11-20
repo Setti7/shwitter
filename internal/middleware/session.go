@@ -8,6 +8,8 @@ import (
 )
 
 const SESSION_HEADER = "X-Session-Token"
+const USER_KEY = "user"
+const SESSION_KEY = "session"
 
 func CurrentUserMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -33,7 +35,7 @@ func CurrentUserMiddleware() gin.HandlerFunc {
 				return
 			}
 
-			c.Set("session", sess)
+			c.Set(SESSION_KEY, sess)
 
 			user, err := query.GetUserByID(sess.UserId)
 			if err != nil {
@@ -41,7 +43,7 @@ func CurrentUserMiddleware() gin.HandlerFunc {
 				return
 			}
 
-			c.Set("user", user)
+			c.Set(USER_KEY, user)
 		}
 
 		c.Next()
