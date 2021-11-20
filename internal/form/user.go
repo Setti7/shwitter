@@ -12,7 +12,6 @@ import (
 type Credentials struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
-	UserId   string `json:"user_id"`
 }
 
 type CreateUserCredentials struct {
@@ -34,6 +33,7 @@ func (c *Credentials) HasCredentials() bool {
 }
 
 // TODO validate all other fields
+// TODO> add validation to forms with a commom interface
 func (c *CreateUserCredentials) ValidateCreds() error {
 	// Validate email address
 	_, err := mail.ParseAddress(c.Email)

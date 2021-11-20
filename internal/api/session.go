@@ -21,7 +21,7 @@ func CreateSession(c *gin.Context) {
 	}
 
 	if f.HasCredentials() {
-		creds, err := query.GetUserCredentials(f.Username)
+		userID, creds, err := query.GetUserCredentials(f.Username)
 		if err != nil {
 			abortInvalidUsernameAndPassword(c)
 			return
@@ -32,7 +32,7 @@ func CreateSession(c *gin.Context) {
 			return
 		}
 
-		sess, err := query.CreateSession(creds.UserId)
+		sess, err := query.CreateSession(userID)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return

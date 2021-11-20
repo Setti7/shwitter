@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Setti7/shwitter/internal/entity"
 	"github.com/Setti7/shwitter/internal/form"
+	"github.com/Setti7/shwitter/internal/log"
 	"github.com/Setti7/shwitter/internal/query"
 	"github.com/Setti7/shwitter/internal/service"
 	"github.com/Setti7/shwitter/internal/session"
@@ -14,6 +15,8 @@ import (
 	"net/http"
 	"time"
 )
+
+var logger = log.Log
 
 // TODO move this query into the query module
 func ListUsers(c *gin.Context) {
@@ -34,6 +37,7 @@ func ListUsers(c *gin.Context) {
 
 	err := iterable.Close()
 	if err != nil {
+		log.LogError("api.ListUsers", "Error while listing all users", err)
 		AbortResponseUnexpectedError(c)
 		return
 	}
@@ -138,7 +142,7 @@ func CreateUser(c *gin.Context) {
 	defer lock.Release(ctx)
 
 	// Check if the username is already taken
-	_, err = query.GetUserCredentials(f.Username)
+	_, _, err = query.GetUserCredentials(f.Username)
 	if err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "This username is already taken."})
 		return

@@ -3,6 +3,7 @@ package query
 import (
 	"github.com/Setti7/shwitter/internal/entity"
 	"github.com/Setti7/shwitter/internal/form"
+	"github.com/Setti7/shwitter/internal/log"
 	"github.com/Setti7/shwitter/internal/service"
 	"github.com/gocql/gocql"
 	"golang.org/x/crypto/bcrypt"
@@ -11,7 +12,8 @@ import (
 
 // Get a user by its ID.
 //
-// Returns ErrNotFound if the user was not found, ErrUnexpected if other errors occurred.
+// Returns ErrInvalidID if the ID is empty, ErrNotFound if the user was not found and ErrUnexpected if any other
+// errors occurred.
 func GetUserByID(id string) (user entity.User, err error) {
 	if id == "" {
 		return user, ErrInvalidID
@@ -24,6 +26,7 @@ func GetUserByID(id string) (user entity.User, err error) {
 	if err == gocql.ErrNotFound {
 		return user, ErrNotFound
 	} else if err != nil {
+		log.LogError("query.GetUserByID", "Could not get user by ID", err)
 		return user, ErrUnexpected
 	}
 
@@ -36,6 +39,9 @@ func GetUserByID(id string) (user entity.User, err error) {
 	return user, nil
 }
 
+// Enrich a list of userIDs
+//
+// Returns ErrUnexpected on any errors.
 func EnrichUsers(ids []string) (userMap map[string]*entity.User, err error) {
 	userMap = make(map[string]*entity.User)
 
@@ -51,18 +57,27 @@ func EnrichUsers(ids []string) (userMap map[string]*entity.User, err error) {
 			}
 			m = map[string]interface{}{}
 		}
+
 		err = iterable.Close()
+		if err != nil {
+			log.LogError("query.EnrichUsers", "Could not enrich users", err)
+			return userMap, ErrUnexpected
+		}
 	}
 
-	return userMap, err
+	return userMap, nil
 }
 
+// Create a new user with its credentials
+//
+// Returns ErrUnexpected on any errors.
 func CreateNewUserWithCredentials(f form.CreateUserCredentials) (user entity.User, err error) {
 	uuid := gocql.TimeUUID()
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(f.Password), 10)
 	if err != nil {
-		return user, err
+		log.LogError("query.CreateNewUserWithCredentials", "Error while generating user password", err)
+		return user, ErrUnexpected
 	}
 
 	user.ID = uuid.String()
@@ -71,7 +86,6 @@ func CreateNewUserWithCredentials(f form.CreateUserCredentials) (user entity.Use
 	user.Email = f.Email
 
 	batch := service.Cassandra().NewBatch(gocql.LoggedBatch)
-
 	batch.Query("INSERT INTO credentials (username, password, userId) VALUES (?, ?, ?)",
 		f.Username, hashedPassword, uuid)
 	batch.Query(
@@ -79,12 +93,19 @@ func CreateNewUserWithCredentials(f form.CreateUserCredentials) (user entity.Use
 		user.ID, user.Username, user.Name, user.Email)
 
 	err = service.Cassandra().ExecuteBatch(batch)
+	if err != nil {
+		log.LogError("query.CreateNewUserWithCredentials", "Error while executing batch operation", err)
+		return user, ErrUnexpected
+	}
 
 	return user, err
 }
 
-func listFriendsOrFollowers(userID string, useFriendsTable bool) (friendOrFollowers []*form.FriendOrFollower, err error) {
-	friendOrFollowers = make([]*form.FriendOrFollower, 0)
+func listFriendsOrFollowers(userID string, useFriendsTable bool) ([]*form.FriendOrFollower, error) {
+	friendOrFollowers := make([]*form.FriendOrFollower, 0)
+	if userID == "" {
+		return friendOrFollowers, ErrInvalidID
+	}
 
 	var q string
 	if useFriendsTable {
@@ -112,9 +133,10 @@ func listFriendsOrFollowers(userID string, useFriendsTable bool) (friendOrFollow
 		m = map[string]interface{}{}
 	}
 
-	err = iterable.Close()
+	err := iterable.Close()
 	if err != nil {
-		return friendOrFollowers, err
+		log.LogError("query.listFriendsOrFollowers", "Could not list friends/followers for user", err)
+		return friendOrFollowers, ErrUnexpected
 	}
 
 	var friendOrFollowerIDs []string
@@ -125,7 +147,8 @@ func listFriendsOrFollowers(userID string, useFriendsTable bool) (friendOrFollow
 	// With the list of friend or followers UUIDs, enrich their information
 	users, err := EnrichUsers(friendOrFollowerIDs)
 	if err != nil {
-		return friendOrFollowers, err
+		// We don't need to log error here because its already logged inside EnrichUsers
+		return friendOrFollowers, ErrUnexpected
 	}
 
 	for _, f := range friendOrFollowers {
@@ -135,15 +158,23 @@ func listFriendsOrFollowers(userID string, useFriendsTable bool) (friendOrFollow
 	return friendOrFollowers, nil
 }
 
-func ListFollowers(userID string) (followers []*form.FriendOrFollower, err error) {
+// List all followers of a given user
+//
+// Returns ErrInvalidID if the ID is empty and ErrUnexpected on any other errors.
+func ListFollowers(userID string) ([]*form.FriendOrFollower, error) {
 	return listFriendsOrFollowers(userID, false)
 }
 
-func ListFriends(userID string) (followers []*form.FriendOrFollower, err error) {
+// List all friends of a given user
+//
+// Returns ErrInvalidID if the ID is empty and ErrUnexpected on any other errors.
+func ListFriends(userID string) ([]*form.FriendOrFollower, error) {
 	return listFriendsOrFollowers(userID, true)
 }
 
-// TODO add parameter checks for empty ids on all theses queries
+// Make a user follow another user. Make sure userID is a valid user.
+//
+// Returns ErrNotFound if otherUserID was not found and ErrUnexpected on any other errors.
 func FollowUser(userID string, otherUserID string) error {
 	_, err := GetUserByID(otherUserID)
 	if err != nil {
@@ -161,10 +192,23 @@ func FollowUser(userID string, otherUserID string) error {
 	batch.Query("INSERT INTO followers (userid, follower_id, since) VALUES (?, ?, ?)",
 		otherUserID, userID, time.Now())
 
-	return service.Cassandra().ExecuteBatch(batch)
+	err = service.Cassandra().ExecuteBatch(batch)
+	if err != nil {
+		return ErrUnexpected
+	}
+
+	return nil
 }
 
-func UnFollowUser(userID string, otherUserID string) (err error) {
+// Make a user unfollow another user. Make sure userID is a valid user.
+//
+// Returns ErrNotFound if otherUserID was not found and ErrUnexpected on any other errors.
+func UnFollowUser(userID string, otherUserID string) error {
+	_, err := GetUserByID(otherUserID)
+	if err != nil {
+		return ErrNotFound
+	}
+
 	batch := service.Cassandra().NewBatch(gocql.LoggedBatch)
 
 	// From the userID perspective: userID (me) is NOT following otherUserID anymore
@@ -173,5 +217,10 @@ func UnFollowUser(userID string, otherUserID string) (err error) {
 	// From the otherUserID perspective: otherUserID (me) is NOT being followed by userID anymore
 	batch.Query("DELETE FROM followers WHERE userid=? AND follower_id=?", otherUserID, userID)
 
-	return service.Cassandra().ExecuteBatch(batch)
+	err = service.Cassandra().ExecuteBatch(batch)
+	if err != nil {
+		return ErrUnexpected
+	}
+
+	return nil
 }

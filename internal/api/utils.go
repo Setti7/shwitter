@@ -10,5 +10,5 @@ func AbortResponseUnexpectedError(c *gin.Context) {
 }
 
 func AbortResponseNotFound(c *gin.Context) {
-	c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "This resource was not found."})
+	c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "This resource was not found."})
 }
