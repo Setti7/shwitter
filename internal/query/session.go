@@ -44,11 +44,13 @@ func ListSessionsForUser(userID string) (sessions []entity.Session, err error) {
 	m := map[string]interface{}{}
 	iterator := service.Cassandra().Query(query, userID).Iter()
 	for iterator.MapScan(m) {
-		sessions = append(sessions, entity.Session{
+		sess := entity.Session{
 			ID:         m["id"].(string),
 			UserId:     userUUID,
 			Expiration: m["expiration"].(time.Time),
-		})
+		}
+		sess.CreateToken()
+		sessions = append(sessions, sess)
 		m = map[string]interface{}{}
 	}
 
@@ -68,6 +70,7 @@ func CreateSession(userID gocql.UUID) (sess entity.Session, err error) {
 	sess.ID = id
 	sess.UserId = userID
 	sess.Expiration = expiration
+	sess.CreateToken()
 
 	return sess, nil
 }

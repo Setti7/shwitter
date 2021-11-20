@@ -4,17 +4,24 @@ import (
 	"github.com/Setti7/shwitter/internal/query"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strings"
 )
 
-const SESSION_HEADER = "X-Session-ID"
-const USERID_HEADER = "X-User-ID"
+const SESSION_HEADER = "X-Session-Token"
 
 func CurrentUserMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		sessID := c.GetHeader(SESSION_HEADER)
-		userID := c.GetHeader(USERID_HEADER)
+		sessToken := c.GetHeader(SESSION_HEADER)
 
-		if sessID != "" {
+		if sessToken != "" {
+			tokenParts := strings.Split(sessToken, ":")
+			if len(tokenParts) != 2 {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid session header."})
+				return
+			}
+
+			userID := tokenParts[0]
+			sessID := tokenParts[1]
 
 			sess, err := query.GetSession(userID, sessID)
 
