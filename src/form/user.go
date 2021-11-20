@@ -3,9 +3,11 @@ package form
 import (
 	"errors"
 	"fmt"
+	"github.com/Setti7/shwitter/entity"
 	"github.com/gocql/gocql"
 	"net/mail"
 	"regexp"
+	"time"
 )
 
 type Credentials struct {
@@ -64,4 +66,10 @@ func (c *CreateUserCredentials) ValidateCreds() error {
 	}
 
 	return nil
+}
+
+type FriendOrFollower struct {
+	UserID gocql.UUID   `json:"-"`
+	User   *entity.User `json:"user"`
+	Since  time.Time    `json:"since"`
 }

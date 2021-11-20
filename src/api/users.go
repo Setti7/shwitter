@@ -65,6 +65,70 @@ func GetUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": user})
 }
 
+func FollowUser(c *gin.Context) {
+	// TODO: make sure we cannot follow a user twice
+	user, ok := session.GetUserOrAbort(c)
+	if !ok {
+		return
+	}
+
+	followUserID, err := gocql.ParseUUID(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID to follow."})
+		return
+	}
+
+	err = query.FollowUser(user.ID, followUserID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
+	} else {
+		c.Status(http.StatusOK)
+	}
+}
+
+func UnFollowUser(c *gin.Context) {
+	user, ok := session.GetUserOrAbort(c)
+	if !ok {
+		return
+	}
+
+	followUserID, err := gocql.ParseUUID(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID to unfollow."})
+		return
+	}
+
+	err = query.UnFollowUser(user.ID, followUserID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
+	} else {
+		c.Status(http.StatusOK)
+	}
+}
+
+func ListFriendsOrFollowers(isFriend bool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, err := gocql.ParseUUID(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID."})
+			return
+		}
+
+		var friendsOrFollowers []*form.FriendOrFollower
+		if isFriend {
+			friendsOrFollowers, err = query.ListFriends(userID)
+		} else {
+			friendsOrFollowers, err = query.ListFollowers(userID)
+		}
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"data": friendsOrFollowers})
+		}
+	}
+}
+
 func CreateUser(c *gin.Context) {
 	var f form.CreateUserCredentials
 	if err := c.BindJSON(&f); err != nil {

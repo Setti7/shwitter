@@ -32,6 +32,10 @@ func main() {
 	r.GET("/users/:id", api.GetUser)
 	r.POST("/users", api.CreateUser)
 	r.GET("/users/me", api.GetCurrentUser)
+	r.POST("/users/:id/follow", api.FollowUser)
+	r.POST("/users/:id/unfollow", api.UnFollowUser)
+	r.GET("/users/:id/followers", api.ListFriendsOrFollowers(false))
+	r.GET("/users/:id/friends", api.ListFriendsOrFollowers(true))
 
 	r.POST("/sessions", api.CreateSession)
 	r.DELETE("/sessions/:id", api.DeleteSession)
