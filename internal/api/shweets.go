@@ -23,7 +23,7 @@ func CreateShweet(c *gin.Context) {
 
 	shweetId, err := query.CreateShweet(user.ID, f)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		AbortResponseUnexpectedError(c)
 		return
 	}
 
@@ -37,7 +37,7 @@ func ListShweets(c *gin.Context) {
 		return
 	}
 
-	// Get the list of user UUIDS
+	// Get the list of user IDs
 	var userIDs []string
 	for _, shweet := range rawShweets {
 		userIDs = append(userIDs, shweet.UserID)
@@ -61,8 +61,11 @@ func ListShweets(c *gin.Context) {
 
 func GetShweet(c *gin.Context) {
 	shweet, err := query.GetShweetByID(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err == query.ErrNotFound || err == query.ErrInvalidID {
+		AbortResponseNotFound(c)
+		return
+	} else if err != nil {
+		AbortResponseUnexpectedError(c)
 		return
 	}
 
