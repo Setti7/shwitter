@@ -12,7 +12,10 @@ import (
 
 var version = "development"
 
-//var log = event.log TODO add logging
+//var log = event.log
+// TODO
+//   [ ] Add error handling (like done on query.FollowUser)
+//	 [ ] Add logging
 
 func main() {
 	app := cli.NewApp()

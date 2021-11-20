@@ -1,12 +1,17 @@
 package query
 
 import (
+	"errors"
 	"github.com/Setti7/shwitter/internal/entity"
 	"github.com/Setti7/shwitter/internal/form"
 	"github.com/Setti7/shwitter/internal/service"
 	"github.com/gocql/gocql"
 	"golang.org/x/crypto/bcrypt"
 	"time"
+)
+
+var (
+	ErrNotFound = errors.New("not found")
 )
 
 func GetUserByID(id gocql.UUID) (user entity.User, err error) {
@@ -71,7 +76,7 @@ func CreateNewUserWithCredentials(f form.CreateUserCredentials) (user entity.Use
 	return user, err
 }
 
-func listFriendsOrFollowers(userID gocql.UUID, useFriendsTable bool) (friendOrFollowers []*form.FriendOrFollower, err error) {
+func listFriendsOrFollowers(userID gocql.UUID, useFriendsTable bool) (friendOrFollowers []*form.FriendOrFollower) {
 	friendOrFollowers = make([]*form.FriendOrFollower, 0)
 
 	var q string
@@ -110,40 +115,45 @@ func listFriendsOrFollowers(userID gocql.UUID, useFriendsTable bool) (friendOrFo
 		f.User = users[f.UserID.String()]
 	}
 
-	return friendOrFollowers, nil
+	return friendOrFollowers
 }
 
-func ListFollowers(userID gocql.UUID) (followers []*form.FriendOrFollower, err error) {
+func ListFollowers(userID gocql.UUID) (followers []*form.FriendOrFollower) {
 	return listFriendsOrFollowers(userID, false)
 }
 
-func ListFriends(userID gocql.UUID) (followers []*form.FriendOrFollower, err error) {
+func ListFriends(userID gocql.UUID) (followers []*form.FriendOrFollower) {
 	return listFriendsOrFollowers(userID, true)
 }
 
-func FollowUser(userID gocql.UUID, followerID gocql.UUID) error {
+func FollowUser(userID gocql.UUID, otherUserID gocql.UUID) error {
+	_, err := GetUserByID(otherUserID)
+	if err != nil {
+		return ErrNotFound
+	}
+
 	batch := service.Cassandra().NewBatch(gocql.LoggedBatch)
 
-	// From the userID perspective: userID (me) is following followerID
+	// From the userID perspective: userID (me) is following otherUserID
 	batch.Query(
 		"INSERT INTO friends (userid, friend_id, since) VALUES (?, ?, ?)",
-		userID, followerID, time.Now())
+		userID, otherUserID, time.Now())
 
-	// From the followerID perspective: followerID (me) is being followed by userID
+	// From the otherUserID perspective: otherUserID (me) is being followed by userID
 	batch.Query("INSERT INTO followers (userid, follower_id, since) VALUES (?, ?, ?)",
-		followerID, userID, time.Now())
+		otherUserID, userID, time.Now())
 
 	return service.Cassandra().ExecuteBatch(batch)
 }
 
-func UnFollowUser(userID gocql.UUID, followerID gocql.UUID) (err error) {
+func UnFollowUser(userID gocql.UUID, otherUserID gocql.UUID) (err error) {
 	batch := service.Cassandra().NewBatch(gocql.LoggedBatch)
 
-	// From the userID perspective: userID (me) is NOT following followerID anymore
-	batch.Query("DELETE FROM friends WHERE userid=? AND friend_id=?", userID, followerID)
+	// From the userID perspective: userID (me) is NOT following otherUserID anymore
+	batch.Query("DELETE FROM friends WHERE userid=? AND friend_id=?", userID, otherUserID)
 
-	// From the followerID perspective: followerID (me) is NOT being followed by userID anymore
-	batch.Query("DELETE FROM followers WHERE userid=? AND follower_id=?", followerID, userID)
+	// From the otherUserID perspective: otherUserID (me) is NOT being followed by userID anymore
+	batch.Query("DELETE FROM followers WHERE userid=? AND follower_id=?", otherUserID, userID)
 
 	return service.Cassandra().ExecuteBatch(batch)
 }

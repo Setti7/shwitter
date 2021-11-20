@@ -65,9 +65,6 @@ func GetUser(c *gin.Context) {
 }
 
 func FollowUser(c *gin.Context) {
-	// TODO:
-	//   [X] make sure we cannot follow a user twice
-	//   [ ] make sure we can only follow existent users
 	user, ok := session.GetUserOrAbort(c)
 	if !ok {
 		return
@@ -80,7 +77,10 @@ func FollowUser(c *gin.Context) {
 	}
 
 	err = query.FollowUser(user.ID, followUserID)
-	if err != nil {
+
+	if err == query.ErrNotFound {
+		c.JSON(http.StatusNotFound, gin.H{"error": "This user does not exist."})
+	} else if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
 	} else {
 		c.Status(http.StatusOK)
@@ -117,16 +117,12 @@ func ListFriendsOrFollowers(isFriend bool) gin.HandlerFunc {
 
 		var friendsOrFollowers []*form.FriendOrFollower
 		if isFriend {
-			friendsOrFollowers, err = query.ListFriends(userID)
+			friendsOrFollowers = query.ListFriends(userID)
 		} else {
-			friendsOrFollowers, err = query.ListFollowers(userID)
+			friendsOrFollowers = query.ListFollowers(userID)
 		}
 
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
-		} else {
-			c.JSON(http.StatusOK, gin.H{"data": friendsOrFollowers})
-		}
+		c.JSON(http.StatusOK, gin.H{"data": friendsOrFollowers})
 	}
 }
 
