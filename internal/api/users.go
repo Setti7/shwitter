@@ -92,7 +92,7 @@ func ListFriendsOrFollowers(isFriend bool) gin.HandlerFunc {
 func CreateUser(c *gin.Context) {
 	var f form.CreateUserForm
 
-	errs := form.BindJSON(c, &f)
+	errs := form.BindJSONOrAbort(c, &f)
 	if errs != nil {
 		return
 	}

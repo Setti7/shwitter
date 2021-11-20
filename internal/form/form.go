@@ -8,7 +8,10 @@ import (
 	"reflect"
 )
 
-func BindJSON(c *gin.Context, obj interface{}) []map[string]string {
+type ErrorMap []map[string]string
+
+// Validates the obj and returns user-readable errors
+func BindJSONOrAbort(c *gin.Context, obj interface{}) ErrorMap {
 	if err := c.BindJSON(obj); err != nil {
 		errs := listOfErrors(obj, err)
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": errs})
@@ -18,24 +21,23 @@ func BindJSON(c *gin.Context, obj interface{}) []map[string]string {
 	return nil
 }
 
-// TODO: return list of errors for each field
-func listOfErrors(obj interface{}, e error) []map[string]string {
+func listOfErrors(obj interface{}, e error) ErrorMap {
 	ve := e.(validator.ValidationErrors)
-	InvalidFields := make([]map[string]string, 0)
+	InvalidFields := make(ErrorMap, 0)
 
 	for _, e := range ve {
 		errors := map[string]string{}
 
 		field, _ := reflect.TypeOf(obj).Elem().FieldByName(e.Field())
 		jsonTag := string(field.Tag.Get("json"))
-		errors[jsonTag] = ValidationErrorToText(e)
+		errors[jsonTag] = validationErrorToText(e)
 		InvalidFields = append(InvalidFields, errors)
 	}
 
 	return InvalidFields
 }
 
-func ValidationErrorToText(e validator.FieldError) string {
+func validationErrorToText(e validator.FieldError) string {
 	switch e.Tag() {
 	case "required":
 		return "This field is required."
