@@ -3,9 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
-	"github.com/Setti7/shwitter/internal/entity"
 	"github.com/Setti7/shwitter/internal/form"
-	"github.com/Setti7/shwitter/internal/log"
 	"github.com/Setti7/shwitter/internal/query"
 	"github.com/Setti7/shwitter/internal/service"
 	"github.com/Setti7/shwitter/internal/session"
@@ -16,28 +14,9 @@ import (
 	"time"
 )
 
-var logger = log.Log
-
-// TODO move this query into the query module
 func ListUsers(c *gin.Context) {
-	var users = make([]entity.User, 0)
-
-	m := map[string]interface{}{}
-	iterable := service.Cassandra().Query("SELECT id, username, name, email, bio FROM users").Iter()
-	for iterable.MapScan(m) {
-		users = append(users, entity.User{
-			ID:       m["id"].(gocql.UUID).String(),
-			Username: m["username"].(string),
-			Name:     m["name"].(string),
-			Email:    m["email"].(string),
-			Bio:      m["bio"].(string),
-		})
-		m = map[string]interface{}{}
-	}
-
-	err := iterable.Close()
+	users, err := query.ListUsers()
 	if err != nil {
-		log.LogError("api.ListUsers", "Error while listing all users", err)
 		AbortResponseUnexpectedError(c)
 		return
 	}

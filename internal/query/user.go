@@ -224,3 +224,31 @@ func UnFollowUser(userID string, otherUserID string) error {
 
 	return nil
 }
+
+// List all users
+//
+// Returns ErrUnexpected on any errors.
+func ListUsers() (users []*entity.User, err error) {
+	users = make([]*entity.User, 0)
+
+	m := map[string]interface{}{}
+	iterable := service.Cassandra().Query("SELECT id, username, name, email, bio FROM users").Iter()
+	for iterable.MapScan(m) {
+		users = append(users, &entity.User{
+			ID:       m["id"].(gocql.UUID).String(),
+			Username: m["username"].(string),
+			Name:     m["name"].(string),
+			Email:    m["email"].(string),
+			Bio:      m["bio"].(string),
+		})
+		m = map[string]interface{}{}
+	}
+
+	err = iterable.Close()
+	if err != nil {
+		log.LogError("query.ListUsers", "Could not list all users", err)
+		return users, ErrUnexpected
+	}
+
+	return users, nil
+}
