@@ -23,7 +23,7 @@ func GetUserCredentials(username string) (id string, creds form.Credentials, err
 	}
 
 	id = m["userid"].(gocql.UUID).String()
-	creds.Password = m["password"].(string)
+	creds.HashedPassword = m["password"].(string)
 	creds.Username = username
 
 	return id, creds, nil

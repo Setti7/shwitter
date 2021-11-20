@@ -4,20 +4,24 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Setti7/shwitter/internal/entity"
+	"golang.org/x/crypto/bcrypt"
 	"net/mail"
 	"regexp"
 	"time"
 )
 
+// TODO move crendetials to entity and create another for form CredentialsForm
 type Credentials struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username       string `json:"username"`
+	Password       string `json:"password"`
+	HashedPassword string `json:"-"`
 }
 
 type CreateUserCredentials struct {
-	Credentials
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
 }
 
 func (c *Credentials) HasUsername() bool {
@@ -32,8 +36,13 @@ func (c *Credentials) HasCredentials() bool {
 	return c.HasUsername() && c.HasPassword()
 }
 
+func (c *Credentials) ComparePassword(password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(c.HashedPassword), []byte(password))
+	return err == nil
+}
+
 // TODO validate all other fields
-// TODO> add validation to forms with a commom interface
+// TODO add validation to forms with a commom interface
 func (c *CreateUserCredentials) ValidateCreds() error {
 	// Validate email address
 	_, err := mail.ParseAddress(c.Email)

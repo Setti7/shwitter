@@ -5,13 +5,14 @@ import (
 	"github.com/Setti7/shwitter/internal/query"
 	"github.com/Setti7/shwitter/internal/session"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 	"net/http"
 )
 
 func abortInvalidUsernameAndPassword(c *gin.Context) {
 	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username/password."})
 }
+
+// TODO: handle errors better for user on api module
 
 func CreateSession(c *gin.Context) {
 	var f form.Credentials
@@ -20,28 +21,27 @@ func CreateSession(c *gin.Context) {
 		return
 	}
 
-	if f.HasCredentials() {
+	if !f.HasCredentials() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "username and password are required."})
+	} else {
 		userID, creds, err := query.GetUserCredentials(f.Username)
 		if err != nil {
 			abortInvalidUsernameAndPassword(c)
 			return
 		}
 
-		if err := bcrypt.CompareHashAndPassword([]byte(creds.Password), []byte(f.Password)); err != nil {
+		if creds.ComparePassword(f.Password) {
 			abortInvalidUsernameAndPassword(c)
 			return
 		}
 
 		sess, err := query.CreateSession(userID)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		} else {
-			c.JSON(http.StatusOK, gin.H{"data": sess})
+			AbortResponseUnexpectedError(c)
 			return
 		}
-	} else {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "username and password are required."})
+
+		c.JSON(http.StatusOK, gin.H{"data": sess})
 	}
 }
 
@@ -69,8 +69,9 @@ func DeleteSession(c *gin.Context) {
 
 	sessID := c.Param("id")
 	err := query.DeleteSession(user.ID, sessID)
-	if err != nil {
+	if err == query.ErrInvalidID {
+		AbortResponseNotFound(c)
+	} else if err != nil {
 		AbortResponseUnexpectedError(c)
-		return
 	}
 }
