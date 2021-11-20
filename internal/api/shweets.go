@@ -10,9 +10,10 @@ import (
 )
 
 func CreateShweet(c *gin.Context) {
-	var f form.CreateShweet
-	if err := c.BindJSON(&f); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var f form.CreateShweetForm
+
+	errs := form.BindJSONOrAbort(c, &f)
+	if errs != nil {
 		return
 	}
 
@@ -60,6 +61,7 @@ func ListShweets(c *gin.Context) {
 
 func GetShweet(c *gin.Context) {
 	shweet, err := query.GetShweetByID(c.Param("id"))
+
 	if err == query.ErrNotFound || err == query.ErrInvalidID {
 		AbortResponseNotFound(c)
 		return

@@ -16,6 +16,7 @@ import (
 
 func ListUsers(c *gin.Context) {
 	users, err := query.ListUsers()
+
 	if err != nil {
 		AbortResponseUnexpectedError(c)
 	} else {

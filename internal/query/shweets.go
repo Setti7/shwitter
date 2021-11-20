@@ -40,7 +40,7 @@ func GetShweetByID(id string) (shweet entity.Shweet, err error) {
 // Create a shweet
 //
 // Returns ErrInvalidID if the ID is empty and ErrUnexpected for any other errors.
-func CreateShweet(userID string, f form.CreateShweet) (string, error) {
+func CreateShweet(userID string, f form.CreateShweetForm) (string, error) {
 	if userID == "" {
 		return "", ErrInvalidID
 	}

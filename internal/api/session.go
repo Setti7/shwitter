@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/Setti7/shwitter/internal/entity"
+	"github.com/Setti7/shwitter/internal/form"
 	"github.com/Setti7/shwitter/internal/middleware"
 	"github.com/Setti7/shwitter/internal/query"
 	"github.com/gin-gonic/gin"
@@ -13,9 +13,10 @@ func abortInvalidUsernameAndPassword(c *gin.Context) {
 }
 
 func CreateSession(c *gin.Context) {
-	var f entity.Credentials
-	if err := c.BindJSON(&f); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var f form.LoginForm
+
+	errs := form.BindJSONOrAbort(c, &f)
+	if errs != nil {
 		return
 	}
 
