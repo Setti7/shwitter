@@ -6,26 +6,23 @@ import (
 	"github.com/Setti7/shwitter/internal/service"
 	"github.com/Setti7/shwitter/internal/session"
 
-	"github.com/gocql/gocql"
 	"time"
 )
 
 func GetSession(userID string, sessID string) (sess entity.Session, err error) {
-	userUUID, err := gocql.ParseUUID(userID)
-
-	if sessID == "" || err != nil {
-		return sess, errors.New("Invalid session.")
+	if userID == "" || sessID == "" {
+		return sess, ErrInvalidID
 	}
 
 	query := "SELECT id, userid, expiration FROM sessions WHERE userid=? AND id=? LIMIT 1"
 	m := map[string]interface{}{}
-	cassErr := service.Cassandra().Query(query, userID, sessID).MapScan(m)
-	if cassErr != nil {
-		return sess, errors.New("Session not found.")
+	err = service.Cassandra().Query(query, userID, sessID).MapScan(m)
+	if err != nil {
+		return sess, ErrNotFound
 	}
 
 	sess.ID = sessID
-	sess.UserId = userUUID
+	sess.UserId = userID
 	sess.Expiration = m["expiration"].(time.Time)
 
 	return sess, nil
@@ -34,30 +31,25 @@ func GetSession(userID string, sessID string) (sess entity.Session, err error) {
 func ListSessionsForUser(userID string) (sessions []entity.Session, err error) {
 	sessions = make([]entity.Session, 0)
 
-	userUUID, err := gocql.ParseUUID(userID)
-
-	if err != nil {
-		return sessions, errors.New("Invalid userID.")
-	}
-
 	query := "SELECT id, userid, expiration FROM sessions WHERE userid=?"
 	m := map[string]interface{}{}
 	iterator := service.Cassandra().Query(query, userID).Iter()
 	for iterator.MapScan(m) {
 		sess := entity.Session{
 			ID:         m["id"].(string),
-			UserId:     userUUID,
+			UserId:     userID,
 			Expiration: m["expiration"].(time.Time),
 		}
 		sess.CreateToken()
 		sessions = append(sessions, sess)
 		m = map[string]interface{}{}
 	}
+	err = iterator.Close()
 
-	return sessions, nil
+	return sessions, err
 }
 
-func CreateSession(userID gocql.UUID) (sess entity.Session, err error) {
+func CreateSession(userID string) (sess entity.Session, err error) {
 	id := session.NewID()
 	expiration := time.Now().Add(time.Hour * 24 * 90) // Session expires in 90 days
 
@@ -75,9 +67,9 @@ func CreateSession(userID gocql.UUID) (sess entity.Session, err error) {
 	return sess, nil
 }
 
-func DeleteSession(userID string, id string) (err error) {
+func DeleteSession(userID string, sessID string) (err error) {
 	query := "DELETE FROM sessions WHERE userid=? AND id=?"
-	cassErr := service.Cassandra().Query(query, userID, id).Exec()
+	cassErr := service.Cassandra().Query(query, userID, sessID).Exec()
 	if cassErr != nil {
 		return errors.New("Could not delete session.")
 	}

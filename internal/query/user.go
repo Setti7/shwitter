@@ -1,7 +1,6 @@
 package query
 
 import (
-	"errors"
 	"github.com/Setti7/shwitter/internal/entity"
 	"github.com/Setti7/shwitter/internal/form"
 	"github.com/Setti7/shwitter/internal/service"
@@ -10,19 +9,25 @@ import (
 	"time"
 )
 
-var (
-	ErrNotFound = errors.New("not found")
-)
-
-func GetUserByID(id gocql.UUID) (user entity.User, err error) {
-	query := "SELECT id, username, email, name, bio FROM users WHERE id=? LIMIT 1"
-	m := map[string]interface{}{}
-	cassErr := service.Cassandra().Query(query, id).MapScan(m)
-	if cassErr != nil {
-		return user, cassErr
+// Get a user by its ID.
+//
+// Returns ErrNotFound if the user was not found, ErrUnexpected if other errors occurred.
+func GetUserByID(id string) (user entity.User, err error) {
+	if id == "" {
+		return user, ErrInvalidID
 	}
 
-	user.ID = m["id"].(gocql.UUID)
+	query := "SELECT id, username, email, name, bio FROM users WHERE id=? LIMIT 1"
+	m := map[string]interface{}{}
+	err = service.Cassandra().Query(query, id).MapScan(m)
+
+	if err == gocql.ErrNotFound {
+		return user, ErrNotFound
+	} else if err != nil {
+		return user, ErrUnexpected
+	}
+
+	user.ID = m["id"].(gocql.UUID).String()
 	user.Username = m["username"].(string)
 	user.Email = m["email"].(string)
 	user.Name = m["name"].(string)
@@ -31,24 +36,25 @@ func GetUserByID(id gocql.UUID) (user entity.User, err error) {
 	return user, nil
 }
 
-func EnrichUsers(uuids []gocql.UUID) map[string]*entity.User {
-	userMap := make(map[string]*entity.User)
+func EnrichUsers(ids []string) (userMap map[string]*entity.User, err error) {
+	userMap = make(map[string]*entity.User)
 
-	if len(uuids) > 0 {
+	if len(ids) > 0 {
 		m := map[string]interface{}{}
-		iterable := service.Cassandra().Query("SELECT id, username, name FROM users WHERE id IN ?", uuids).Iter()
+		iterable := service.Cassandra().Query("SELECT id, username, name FROM users WHERE id IN ?", ids).Iter()
 		for iterable.MapScan(m) {
-			userId := m["id"].(gocql.UUID)
-			userMap[userId.String()] = &entity.User{
+			userId := m["id"].(gocql.UUID).String()
+			userMap[userId] = &entity.User{
 				ID:       userId,
 				Username: m["username"].(string),
 				Name:     m["name"].(string),
 			}
 			m = map[string]interface{}{}
 		}
+		err = iterable.Close()
 	}
 
-	return userMap
+	return userMap, err
 }
 
 func CreateNewUserWithCredentials(f form.CreateUserCredentials) (user entity.User, err error) {
@@ -59,7 +65,7 @@ func CreateNewUserWithCredentials(f form.CreateUserCredentials) (user entity.Use
 		return user, err
 	}
 
-	user.ID = uuid
+	user.ID = uuid.String()
 	user.Username = f.Username
 	user.Name = f.Name
 	user.Email = f.Email
@@ -73,10 +79,11 @@ func CreateNewUserWithCredentials(f form.CreateUserCredentials) (user entity.Use
 		user.ID, user.Username, user.Name, user.Email)
 
 	err = service.Cassandra().ExecuteBatch(batch)
+
 	return user, err
 }
 
-func listFriendsOrFollowers(userID gocql.UUID, useFriendsTable bool) (friendOrFollowers []*form.FriendOrFollower) {
+func listFriendsOrFollowers(userID string, useFriendsTable bool) (friendOrFollowers []*form.FriendOrFollower, err error) {
 	friendOrFollowers = make([]*form.FriendOrFollower, 0)
 
 	var q string
@@ -89,11 +96,12 @@ func listFriendsOrFollowers(userID gocql.UUID, useFriendsTable bool) (friendOrFo
 	m := map[string]interface{}{}
 	iterable := service.Cassandra().Query(q, userID).Iter()
 	for iterable.MapScan(m) {
-		var friendOrFollowerID gocql.UUID
+		var friendOrFollowerID string
+
 		if useFriendsTable {
-			friendOrFollowerID = m["friend_id"].(gocql.UUID)
+			friendOrFollowerID = m["friend_id"].(gocql.UUID).String()
 		} else {
-			friendOrFollowerID = m["follower_id"].(gocql.UUID)
+			friendOrFollowerID = m["follower_id"].(gocql.UUID).String()
 		}
 
 		fof := &form.FriendOrFollower{
@@ -104,29 +112,39 @@ func listFriendsOrFollowers(userID gocql.UUID, useFriendsTable bool) (friendOrFo
 		m = map[string]interface{}{}
 	}
 
-	var friendOrFollowerUUIDs []gocql.UUID
+	err = iterable.Close()
+	if err != nil {
+		return friendOrFollowers, err
+	}
+
+	var friendOrFollowerIDs []string
 	for _, f := range friendOrFollowers {
-		friendOrFollowerUUIDs = append(friendOrFollowerUUIDs, f.UserID)
+		friendOrFollowerIDs = append(friendOrFollowerIDs, f.UserID)
 	}
 
 	// With the list of friend or followers UUIDs, enrich their information
-	users := EnrichUsers(friendOrFollowerUUIDs)
-	for _, f := range friendOrFollowers {
-		f.User = users[f.UserID.String()]
+	users, err := EnrichUsers(friendOrFollowerIDs)
+	if err != nil {
+		return friendOrFollowers, err
 	}
 
-	return friendOrFollowers
+	for _, f := range friendOrFollowers {
+		f.User = users[f.UserID]
+	}
+
+	return friendOrFollowers, nil
 }
 
-func ListFollowers(userID gocql.UUID) (followers []*form.FriendOrFollower) {
+func ListFollowers(userID string) (followers []*form.FriendOrFollower, err error) {
 	return listFriendsOrFollowers(userID, false)
 }
 
-func ListFriends(userID gocql.UUID) (followers []*form.FriendOrFollower) {
+func ListFriends(userID string) (followers []*form.FriendOrFollower, err error) {
 	return listFriendsOrFollowers(userID, true)
 }
 
-func FollowUser(userID gocql.UUID, otherUserID gocql.UUID) error {
+// TODO add parameter checks for empty ids on all theses queries
+func FollowUser(userID string, otherUserID string) error {
 	_, err := GetUserByID(otherUserID)
 	if err != nil {
 		return ErrNotFound
@@ -146,7 +164,7 @@ func FollowUser(userID gocql.UUID, otherUserID gocql.UUID) error {
 	return service.Cassandra().ExecuteBatch(batch)
 }
 
-func UnFollowUser(userID gocql.UUID, otherUserID gocql.UUID) (err error) {
+func UnFollowUser(userID string, otherUserID string) (err error) {
 	batch := service.Cassandra().NewBatch(gocql.LoggedBatch)
 
 	// From the userID perspective: userID (me) is NOT following otherUserID anymore

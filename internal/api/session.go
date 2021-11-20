@@ -20,11 +20,7 @@ func CreateSession(c *gin.Context) {
 		return
 	}
 
-	if f.HasToken() {
-		// TODO: add authentication by token
-		c.JSON(http.StatusNotImplemented, gin.H{"error": "This authentication method is not available."})
-		return
-	} else if f.HasCredentials() {
+	if f.HasCredentials() {
 		creds, err := query.GetUserCredentials(f.Username)
 		if err != nil {
 			abortInvalidUsernameAndPassword(c)
@@ -44,6 +40,8 @@ func CreateSession(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"data": sess})
 			return
 		}
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "username and password are required."})
 	}
 }
 
@@ -53,13 +51,13 @@ func ListUserSessions(c *gin.Context) {
 		return
 	}
 
-	sessions, err := query.ListSessionsForUser(user.ID.String())
+	sessions, err := query.ListSessionsForUser(user.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
+		AbortResponseUnexpectedError(c)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": sessions})
 
+	c.JSON(http.StatusOK, gin.H{"data": sessions})
 }
 
 func DeleteSession(c *gin.Context) {
@@ -70,9 +68,9 @@ func DeleteSession(c *gin.Context) {
 	}
 
 	sessID := c.Param("id")
-	err := query.DeleteSession(user.ID.String(), sessID)
+	err := query.DeleteSession(user.ID, sessID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
+		AbortResponseUnexpectedError(c)
 		return
 	}
 }

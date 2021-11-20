@@ -6,7 +6,6 @@ import (
 	"github.com/Setti7/shwitter/internal/query"
 	"github.com/Setti7/shwitter/internal/session"
 	"github.com/gin-gonic/gin"
-	"github.com/gocql/gocql"
 	"net/http"
 )
 
@@ -32,19 +31,28 @@ func CreateShweet(c *gin.Context) {
 }
 
 func ListShweets(c *gin.Context) {
-	rawShweets := query.ListShweets()
+	rawShweets, err := query.ListShweets()
+	if err != nil {
+		AbortResponseUnexpectedError(c)
+		return
+	}
 
 	// Get the list of user UUIDS
-	var userUUIDs []gocql.UUID
+	var userIDs []string
 	for _, shweet := range rawShweets {
-		userUUIDs = append(userUUIDs, shweet.UserID)
+		userIDs = append(userIDs, shweet.UserID)
 	}
 
 	// Enrich the shweets with the users info
-	users := query.EnrichUsers(userUUIDs)
+	users, err := query.EnrichUsers(userIDs)
+	if err != nil {
+		AbortResponseUnexpectedError(c)
+		return
+	}
+
 	var enriched_shweets = make([]entity.Shweet, 0)
 	for _, shweet := range rawShweets {
-		shweet.User = users[shweet.UserID.String()]
+		shweet.User = users[shweet.UserID]
 		enriched_shweets = append(enriched_shweets, shweet)
 	}
 
@@ -58,9 +66,14 @@ func GetShweet(c *gin.Context) {
 		return
 	}
 
-	users := query.EnrichUsers([]gocql.UUID{shweet.UserID})
+	users, err := query.EnrichUsers([]string{shweet.UserID})
+	if err != nil {
+		AbortResponseUnexpectedError(c)
+		return
+	}
+
 	if len(users) > 0 {
-		shweet.User = users[shweet.UserID.String()]
+		shweet.User = users[shweet.UserID]
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": shweet})

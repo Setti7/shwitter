@@ -4,27 +4,21 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Setti7/shwitter/internal/entity"
-	"github.com/gocql/gocql"
 	"net/mail"
 	"regexp"
 	"time"
 )
 
 type Credentials struct {
-	Username string     `json:"username"`
-	Password string     `json:"password"`
-	UserId   gocql.UUID `json:"user_id"`
-	Token    string     `json:"token"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	UserId   string `json:"user_id"`
 }
 
 type CreateUserCredentials struct {
 	Credentials
 	Name  string `json:"name"`
 	Email string `json:"email"`
-}
-
-func (c *Credentials) HasToken() bool {
-	return c.Token != ""
 }
 
 func (c *Credentials) HasUsername() bool {
@@ -69,7 +63,7 @@ func (c *CreateUserCredentials) ValidateCreds() error {
 }
 
 type FriendOrFollower struct {
-	UserID gocql.UUID   `json:"-"`
+	UserID string       `json:"-"`
 	User   *entity.User `json:"user"`
 	Since  time.Time    `json:"since"`
 }

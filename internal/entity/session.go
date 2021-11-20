@@ -1,15 +1,14 @@
 package entity
 
 import (
-	"github.com/gocql/gocql"
 	"time"
 )
 
 type Session struct {
-	ID         string     `json:"id"`
-	UserId     gocql.UUID `json:"user_id"`
-	Expiration time.Time  `json:"expiration"`
-	Token      string     `json:"token"`
+	ID         string    `json:"id"`
+	UserId     string    `json:"user_id"`
+	Expiration time.Time `json:"expiration"`
+	Token      string    `json:"token"`
 }
 
 func (s *Session) IsExpired() bool {
@@ -17,5 +16,5 @@ func (s *Session) IsExpired() bool {
 }
 
 func (s *Session) CreateToken() {
-	s.Token = s.UserId.String() + ":" + s.ID
+	s.Token = s.UserId + ":" + s.ID
 }

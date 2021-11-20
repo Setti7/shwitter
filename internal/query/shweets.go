@@ -22,36 +22,35 @@ func GetShweetByID(id string) (shweet entity.Shweet, err error) {
 	}
 
 	shweet = entity.Shweet{
-		ID:      m["id"].(gocql.UUID),
-		UserID:  m["user_id"].(gocql.UUID),
+		ID:      m["id"].(gocql.UUID).String(),
+		UserID:  m["user_id"].(gocql.UUID).String(),
 		Message: m["message"].(string),
 	}
 
 	return shweet, nil
 }
 
-func CreateShweet(userID gocql.UUID, f form.CreateShweet) (string, error) {
+func CreateShweet(userID string, f form.CreateShweet) (string, error) {
 	uuid := gocql.TimeUUID()
 
-	if err := service.Cassandra().Query(
-		`INSERT INTO shweets (id, user_id, message) VALUES (?, ?, ?)`,
-		uuid, userID, f.Message).Exec(); err != nil {
-		return "", err
-	}
-	return uuid.String(), nil
+	err := service.Cassandra().Query(`INSERT INTO shweets (id, user_id, message) VALUES (?, ?, ?)`,
+		uuid, userID, f.Message).Exec()
+
+	return uuid.String(), err
 }
 
-func ListShweets() (shweets []entity.Shweet) {
+func ListShweets() (shweets []entity.Shweet, err error) {
 	m := map[string]interface{}{}
 	iterable := service.Cassandra().Query("SELECT id, user_id, message FROM shweets").Iter()
 	for iterable.MapScan(m) {
 		shweets = append(shweets, entity.Shweet{
-			ID:      m["id"].(gocql.UUID),
-			UserID:  m["user_id"].(gocql.UUID),
+			ID:      m["id"].(gocql.UUID).String(),
+			UserID:  m["user_id"].(gocql.UUID).String(),
 			Message: m["message"].(string),
 		})
 		m = map[string]interface{}{}
 	}
 
-	return shweets
+	err = iterable.Close()
+	return shweets, err
 }

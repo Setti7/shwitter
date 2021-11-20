@@ -15,13 +15,15 @@ import (
 	"time"
 )
 
+// TODO move this query into the query module
 func ListUsers(c *gin.Context) {
 	var users = make([]entity.User, 0)
+
 	m := map[string]interface{}{}
 	iterable := service.Cassandra().Query("SELECT id, username, name, email, bio FROM users").Iter()
 	for iterable.MapScan(m) {
 		users = append(users, entity.User{
-			ID:       m["id"].(gocql.UUID),
+			ID:       m["id"].(gocql.UUID).String(),
 			Username: m["username"].(string),
 			Name:     m["name"].(string),
 			Email:    m["email"].(string),
@@ -30,38 +32,27 @@ func ListUsers(c *gin.Context) {
 		m = map[string]interface{}{}
 	}
 
+	err := iterable.Close()
+	if err != nil {
+		AbortResponseUnexpectedError(c)
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"data": users})
 }
 
+// Get a user by its id
 func GetUser(c *gin.Context) {
-	var user entity.User
-	var found = false
+	id := c.Param("id")
+	user, err := query.GetUserByID(id)
 
-	uuid, err := gocql.ParseUUID(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	if err == query.ErrNotFound {
+		AbortResponseNotFound(c)
+	} else if err != nil {
+		AbortResponseUnexpectedError(c)
 	} else {
-		m := map[string]interface{}{}
-		q := "SELECT id, username, name, email, bio FROM users WHERE id=? LIMIT 1"
-		iterable := service.Cassandra().Query(q, uuid).Consistency(gocql.One).Iter()
-		for iterable.MapScan(m) {
-			found = true
-			user = entity.User{
-				ID:       m["id"].(gocql.UUID),
-				Username: m["username"].(string),
-				Name:     m["name"].(string),
-				Email:    m["email"].(string),
-				Bio:      m["bio"].(string),
-			}
-		}
-		if !found {
-			c.JSON(http.StatusNotFound, gin.H{"error": "This user couldn't be found."})
-			return
-		}
+		c.JSON(http.StatusOK, gin.H{"data": user})
 	}
-
-	c.JSON(http.StatusOK, gin.H{"data": user})
 }
 
 func FollowUser(c *gin.Context) {
@@ -70,18 +61,13 @@ func FollowUser(c *gin.Context) {
 		return
 	}
 
-	followUserID, err := gocql.ParseUUID(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID to follow."})
-		return
-	}
-
-	err = query.FollowUser(user.ID, followUserID)
+	followUserID := c.Param("id")
+	err := query.FollowUser(user.ID, followUserID)
 
 	if err == query.ErrNotFound {
-		c.JSON(http.StatusNotFound, gin.H{"error": "This user does not exist."})
+		AbortResponseNotFound(c)
 	} else if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
+		AbortResponseUnexpectedError(c)
 	} else {
 		c.Status(http.StatusOK)
 	}
@@ -93,15 +79,11 @@ func UnFollowUser(c *gin.Context) {
 		return
 	}
 
-	followUserID, err := gocql.ParseUUID(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID to unfollow."})
-		return
-	}
+	followUserID := c.Param("id")
 
-	err = query.UnFollowUser(user.ID, followUserID)
+	err := query.UnFollowUser(user.ID, followUserID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
+		AbortResponseUnexpectedError(c)
 	} else {
 		c.Status(http.StatusOK)
 	}
@@ -109,17 +91,19 @@ func UnFollowUser(c *gin.Context) {
 
 func ListFriendsOrFollowers(isFriend bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, err := gocql.ParseUUID(c.Param("id"))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID."})
-			return
-		}
+		var err error
+		userID := c.Param("id")
 
 		var friendsOrFollowers []*form.FriendOrFollower
 		if isFriend {
-			friendsOrFollowers = query.ListFriends(userID)
+			friendsOrFollowers, err = query.ListFriends(userID)
 		} else {
-			friendsOrFollowers = query.ListFollowers(userID)
+			friendsOrFollowers, err = query.ListFollowers(userID)
+		}
+
+		if err != nil {
+			AbortResponseUnexpectedError(c)
+			return
 		}
 
 		c.JSON(http.StatusOK, gin.H{"data": friendsOrFollowers})
@@ -148,7 +132,7 @@ func CreateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Please try again in some seconds."})
 		return
 	} else if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		AbortResponseUnexpectedError(c)
 		return
 	}
 	defer lock.Release(ctx)
@@ -159,14 +143,14 @@ func CreateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "This username is already taken."})
 		return
 	} else if err != gocql.ErrNotFound {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
+		AbortResponseUnexpectedError(c)
 		return
 	}
 
 	// Save the user and its credentials
 	user, err := query.CreateNewUserWithCredentials(f)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
+		AbortResponseUnexpectedError(c)
 		return
 	}
 

@@ -14,7 +14,7 @@ func GetUserCredentials(username string) (creds form.Credentials, err error) {
 		return creds, cassErr
 	}
 
-	creds.UserId = m["userid"].(gocql.UUID)
+	creds.UserId = m["userid"].(gocql.UUID).String()
 	creds.Password = m["password"].(string)
 	creds.Username = username
 	return creds, nil
