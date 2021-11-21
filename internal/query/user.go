@@ -51,9 +51,9 @@ func EnrichUsers(ids []string) (userMap map[string]*entity.User, err error) {
 		m := map[string]interface{}{}
 		iterable := service.Cassandra().Query("SELECT id, username, name FROM users WHERE id IN ?", ids).Iter()
 		for iterable.MapScan(m) {
-			userId := m["id"].(gocql.UUID).String()
-			userMap[userId] = &entity.User{
-				ID:       userId,
+			userID := m["id"].(gocql.UUID).String()
+			userMap[userID] = &entity.User{
+				ID:       userID,
 				Username: m["username"].(string),
 				Name:     m["name"].(string),
 			}
@@ -88,7 +88,7 @@ func CreateNewUserWithCredentials(f form.CreateUserForm) (user entity.User, err 
 	user.Email = f.Email
 
 	batch := service.Cassandra().NewBatch(gocql.LoggedBatch)
-	batch.Query("INSERT INTO credentials (username, password, userId) VALUES (?, ?, ?)",
+	batch.Query("INSERT INTO credentials (username, password, user_id) VALUES (?, ?, ?)",
 		f.Username, hashedPassword, uuid)
 	batch.Query(
 		"INSERT INTO users (id, username, name, email) VALUES (?, ?, ?, ?)",
@@ -111,9 +111,9 @@ func listFriendsOrFollowers(userID string, useFriendsTable bool) ([]*entity.Frie
 
 	var q string
 	if useFriendsTable {
-		q = "SELECT friend_id, since FROM friends WHERE userid=?"
+		q = "SELECT friend_id, since FROM friends WHERE user_id=?"
 	} else {
-		q = "SELECT follower_id, since FROM followers WHERE userid=?"
+		q = "SELECT follower_id, since FROM followers WHERE user_id=?"
 	}
 
 	m := map[string]interface{}{}
@@ -191,11 +191,11 @@ func FollowUser(userID string, otherUserID string) error {
 
 	// From the userID perspective: userID (me) is following otherUserID
 	batch.Query(
-		"INSERT INTO friends (userid, friend_id, since) VALUES (?, ?, ?)",
+		"INSERT INTO friends (user_id, friend_id, since) VALUES (?, ?, ?)",
 		userID, otherUserID, time.Now())
 
 	// From the otherUserID perspective: otherUserID (me) is being followed by userID
-	batch.Query("INSERT INTO followers (userid, follower_id, since) VALUES (?, ?, ?)",
+	batch.Query("INSERT INTO followers (user_id, follower_id, since) VALUES (?, ?, ?)",
 		otherUserID, userID, time.Now())
 
 	err = service.Cassandra().ExecuteBatch(batch)
@@ -218,10 +218,10 @@ func UnFollowUser(userID string, otherUserID string) error {
 	batch := service.Cassandra().NewBatch(gocql.LoggedBatch)
 
 	// From the userID perspective: userID (me) is NOT following otherUserID anymore
-	batch.Query("DELETE FROM friends WHERE userid=? AND friend_id=?", userID, otherUserID)
+	batch.Query("DELETE FROM friends WHERE user_id=? AND friend_id=?", userID, otherUserID)
 
 	// From the otherUserID perspective: otherUserID (me) is NOT being followed by userID anymore
-	batch.Query("DELETE FROM followers WHERE userid=? AND follower_id=?", otherUserID, userID)
+	batch.Query("DELETE FROM followers WHERE user_id=? AND follower_id=?", otherUserID, userID)
 
 	err = service.Cassandra().ExecuteBatch(batch)
 	if err != nil {

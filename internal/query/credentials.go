@@ -11,7 +11,7 @@ import (
 //
 // Returns ErrNotFound if the user was not found and ErrUnexpected on any other error.
 func GetUserCredentials(username string) (id string, creds entity.Credentials, err error) {
-	query := "SELECT username, userid, password FROM credentials WHERE username=? LIMIT 1"
+	query := "SELECT username, user_id, password FROM credentials WHERE username=? LIMIT 1"
 	m := map[string]interface{}{}
 
 	err = service.Cassandra().Query(query, username).MapScan(m)
@@ -22,7 +22,7 @@ func GetUserCredentials(username string) (id string, creds entity.Credentials, e
 		return id, creds, ErrUnexpected
 	}
 
-	id = m["userid"].(gocql.UUID).String()
+	id = m["user_id"].(gocql.UUID).String()
 	creds.HashedPassword = m["password"].(string)
 	creds.Username = username
 

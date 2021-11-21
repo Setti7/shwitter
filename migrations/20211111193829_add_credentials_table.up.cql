@@ -2,6 +2,6 @@ CREATE TABLE credentials
 (
     username text,
     password text,
-    userId   UUID,
+    user_id   UUID,
     PRIMARY KEY (username)
 );

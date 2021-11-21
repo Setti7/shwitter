@@ -1,7 +1,7 @@
 CREATE TABLE sessions
 (
     id         text,
-    userId     UUID,
+    user_id     UUID,
     expiration timestamp,
-    PRIMARY KEY (userId, id)
+    PRIMARY KEY (user_id, id)
 );

@@ -1,15 +1,15 @@
 CREATE TABLE followers
 (
-    userid      UUID,
+    user_id      UUID,
     follower_id UUID,
     since       TIMESTAMP,
-    PRIMARY KEY ( userid, follower_id )
+    PRIMARY KEY ( user_id, follower_id )
 );
 
 CREATE TABLE friends
 (
-    userid    UUID,
+    user_id    UUID,
     friend_id UUID,
     since     TIMESTAMP,
-    PRIMARY KEY ( userid, friend_id )
+    PRIMARY KEY ( user_id, friend_id )
 );
