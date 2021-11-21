@@ -38,7 +38,7 @@ func CurrentUserMiddleware() gin.HandlerFunc {
 
 			c.Set(SESSION_KEY, sess)
 
-			user, err := query.GetUserByID(sess.UserId)
+			user, err := query.GetUserByID(sess.UserID)
 			if err != nil {
 				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
 				return

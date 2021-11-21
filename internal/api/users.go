@@ -49,6 +49,8 @@ func FollowUser(c *gin.Context) {
 
 	if err == query.ErrNotFound {
 		AbortResponseNotFound(c)
+	} else if err == query.ErrUserCannotFollowThemself {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "You cannot follow yourself."})
 	} else if err != nil {
 		AbortResponseUnexpectedError(c)
 	}

@@ -30,7 +30,7 @@ func GetSession(userID string, sessID string) (sess entity.Session, err error) {
 	}
 
 	sess.ID = sessID
-	sess.UserId = userID
+	sess.UserID = userID
 	sess.Expiration = m["expiration"].(time.Time)
 
 	return sess, nil
@@ -51,7 +51,7 @@ func ListSessionsForUser(userID string) (sessions []entity.Session, err error) {
 	for iterator.MapScan(m) {
 		sess := entity.Session{
 			ID:         m["id"].(string),
-			UserId:     userID,
+			UserID:     userID,
 			Expiration: m["expiration"].(time.Time),
 		}
 		sess.CreateToken()
@@ -87,7 +87,7 @@ func CreateSession(userID string) (sess entity.Session, err error) {
 	}
 
 	sess.ID = id
-	sess.UserId = userID
+	sess.UserID = userID
 	sess.Expiration = expiration
 	sess.CreateToken()
 

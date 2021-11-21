@@ -178,6 +178,10 @@ func ListFriends(userID string) ([]*entity.FriendOrFollower, error) {
 //
 // Returns ErrNotFound if otherUserID was not found and ErrUnexpected on any other errors.
 func FollowUser(userID string, otherUserID string) error {
+	if userID == otherUserID {
+		return ErrUserCannotFollowThemself
+	}
+
 	_, err := GetUserByID(otherUserID)
 	if err != nil {
 		return ErrNotFound
