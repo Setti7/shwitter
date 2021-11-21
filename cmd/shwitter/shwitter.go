@@ -33,6 +33,7 @@ func main() {
 	//  [ ] restore database
 	app.Commands = []*cli.Command{
 		&commands.StartCommand,
+		&commands.SetupCommand,
 	}
 
 	if err := app.Run(os.Args); err != nil {
