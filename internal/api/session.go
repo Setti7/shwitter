@@ -4,6 +4,7 @@ import (
 	"github.com/Setti7/shwitter/internal/form"
 	"github.com/Setti7/shwitter/internal/middleware"
 	"github.com/Setti7/shwitter/internal/query"
+	"github.com/Setti7/shwitter/internal/util"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -36,7 +37,7 @@ func CreateSession(c *gin.Context) {
 
 		sess, err := query.CreateSession(userID)
 		if err != nil {
-			AbortResponseUnexpectedError(c)
+			util.AbortResponseUnexpectedError(c)
 		} else {
 			c.JSON(http.StatusOK, gin.H{"data": sess})
 		}
@@ -51,7 +52,7 @@ func ListUserSessions(c *gin.Context) {
 
 	sessions, err := query.ListSessionsForUser(user.ID)
 	if err != nil {
-		AbortResponseUnexpectedError(c)
+		util.AbortResponseUnexpectedError(c)
 	} else {
 		c.JSON(http.StatusOK, gin.H{"data": sessions})
 	}
@@ -67,8 +68,8 @@ func DeleteSession(c *gin.Context) {
 	sessID := c.Param("id")
 	err := query.DeleteSession(user.ID, sessID)
 	if err == query.ErrInvalidID {
-		AbortResponseNotFound(c)
+		util.AbortResponseNotFound(c)
 	} else if err != nil {
-		AbortResponseUnexpectedError(c)
+		util.AbortResponseUnexpectedError(c)
 	}
 }

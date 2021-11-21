@@ -5,6 +5,7 @@ import (
 	"github.com/Setti7/shwitter/internal/form"
 	"github.com/Setti7/shwitter/internal/middleware"
 	"github.com/Setti7/shwitter/internal/query"
+	"github.com/Setti7/shwitter/internal/util"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -24,7 +25,7 @@ func CreateShweet(c *gin.Context) {
 
 	shweetId, err := query.CreateShweet(user.ID, f)
 	if err != nil {
-		AbortResponseUnexpectedError(c)
+		util.AbortResponseUnexpectedError(c)
 	} else {
 		c.JSON(http.StatusOK, gin.H{"data": shweetId})
 	}
@@ -33,7 +34,7 @@ func CreateShweet(c *gin.Context) {
 func ListShweets(c *gin.Context) {
 	rawShweets, err := query.ListShweets()
 	if err != nil {
-		AbortResponseUnexpectedError(c)
+		util.AbortResponseUnexpectedError(c)
 		return
 	}
 
@@ -46,7 +47,7 @@ func ListShweets(c *gin.Context) {
 	// Enrich the shweets with the users info
 	users, err := query.EnrichUsers(userIDs)
 	if err != nil {
-		AbortResponseUnexpectedError(c)
+		util.AbortResponseUnexpectedError(c)
 		return
 	}
 
@@ -63,16 +64,16 @@ func GetShweet(c *gin.Context) {
 	shweet, err := query.GetShweetByID(c.Param("id"))
 
 	if err == query.ErrNotFound || err == query.ErrInvalidID {
-		AbortResponseNotFound(c)
+		util.AbortResponseNotFound(c)
 		return
 	} else if err != nil {
-		AbortResponseUnexpectedError(c)
+		util.AbortResponseUnexpectedError(c)
 		return
 	}
 
 	users, err := query.EnrichUsers([]string{shweet.UserID})
 	if err != nil {
-		AbortResponseUnexpectedError(c)
+		util.AbortResponseUnexpectedError(c)
 		return
 	}
 

@@ -3,6 +3,7 @@ package middleware
 import (
 	"github.com/Setti7/shwitter/internal/entity"
 	"github.com/Setti7/shwitter/internal/query"
+	"github.com/Setti7/shwitter/internal/util"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strings"
@@ -12,7 +13,7 @@ const SESSION_HEADER = "X-Session-Token"
 const USER_KEY = "user"
 const SESSION_KEY = "session"
 
-func CurrentUserMiddleware() gin.HandlerFunc {
+func SessionMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		sessToken := c.GetHeader(SESSION_HEADER)
 
@@ -40,7 +41,7 @@ func CurrentUserMiddleware() gin.HandlerFunc {
 
 			user, err := query.GetUserByID(sess.UserID)
 			if err != nil {
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred."})
+				util.AbortResponseUnexpectedError(c)
 				return
 			}
 

@@ -8,6 +8,7 @@ import (
 	"github.com/Setti7/shwitter/internal/middleware"
 	"github.com/Setti7/shwitter/internal/query"
 	"github.com/Setti7/shwitter/internal/service"
+	"github.com/Setti7/shwitter/internal/util"
 	"github.com/bsm/redislock"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -18,7 +19,7 @@ func ListUsers(c *gin.Context) {
 	users, err := query.ListUsers()
 
 	if err != nil {
-		AbortResponseUnexpectedError(c)
+		util.AbortResponseUnexpectedError(c)
 	} else {
 		c.JSON(http.StatusOK, gin.H{"data": users})
 	}
@@ -30,9 +31,9 @@ func GetUser(c *gin.Context) {
 	user, err := query.GetUserByID(id)
 
 	if err == query.ErrNotFound || err == query.ErrInvalidID {
-		AbortResponseNotFound(c)
+		util.AbortResponseNotFound(c)
 	} else if err != nil {
-		AbortResponseUnexpectedError(c)
+		util.AbortResponseUnexpectedError(c)
 	} else {
 		c.JSON(http.StatusOK, gin.H{"data": user})
 	}
@@ -48,11 +49,11 @@ func FollowUser(c *gin.Context) {
 	err := query.FollowUser(user.ID, followUserID)
 
 	if err == query.ErrNotFound {
-		AbortResponseNotFound(c)
+		util.AbortResponseNotFound(c)
 	} else if err == query.ErrUserCannotFollowThemself {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "You cannot follow yourself."})
 	} else if err != nil {
-		AbortResponseUnexpectedError(c)
+		util.AbortResponseUnexpectedError(c)
 	}
 }
 
@@ -66,9 +67,9 @@ func UnFollowUser(c *gin.Context) {
 	err := query.UnFollowUser(user.ID, followUserID)
 
 	if err == query.ErrNotFound {
-		AbortResponseNotFound(c)
+		util.AbortResponseNotFound(c)
 	} else if err != nil {
-		AbortResponseUnexpectedError(c)
+		util.AbortResponseUnexpectedError(c)
 	}
 }
 
@@ -85,7 +86,7 @@ func ListFriendsOrFollowers(isFriend bool) gin.HandlerFunc {
 		}
 
 		if err != nil {
-			AbortResponseUnexpectedError(c)
+			util.AbortResponseUnexpectedError(c)
 		} else {
 			c.JSON(http.StatusOK, gin.H{"data": friendsOrFollowers})
 		}
@@ -109,7 +110,7 @@ func CreateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Please try again in some seconds."})
 		return
 	} else if err != nil {
-		AbortResponseUnexpectedError(c)
+		util.AbortResponseUnexpectedError(c)
 		return
 	}
 	defer lock.Release(ctx)
@@ -120,14 +121,14 @@ func CreateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "This username is already taken."})
 		return
 	} else if err != query.ErrNotFound {
-		AbortResponseUnexpectedError(c)
+		util.AbortResponseUnexpectedError(c)
 		return
 	}
 
 	// Save the user and its credentials
 	user, err := query.CreateNewUserWithCredentials(f)
 	if err != nil {
-		AbortResponseUnexpectedError(c)
+		util.AbortResponseUnexpectedError(c)
 	} else {
 		c.JSON(http.StatusOK, gin.H{"data": user})
 	}

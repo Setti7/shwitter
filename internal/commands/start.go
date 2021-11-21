@@ -22,7 +22,7 @@ func startAction(_ *cli.Context) error {
 	defer service.CleanUp()
 
 	r := gin.Default()
-	r.Use(middleware.CurrentUserMiddleware())
+	r.Use(middleware.SessionMiddleware())
 
 	r.GET("/healthz", heartbeat)
 
