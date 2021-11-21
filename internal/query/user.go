@@ -10,8 +10,6 @@ import (
 	"time"
 )
 
-// TODO fix returns that named parameters
-
 // Get a user by its ID.
 //
 // Returns ErrInvalidID if the ID is empty, ErrNotFound if the user was not found and ErrUnexpected if any other
