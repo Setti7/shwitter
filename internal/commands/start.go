@@ -46,6 +46,10 @@ func startAction(_ *cli.Context) error {
 	r.DELETE("/sessions/:id", api.DeleteSession)
 	r.GET("/sessions", api.ListUserSessions)
 
+	// add mentions, then add mentions notifications
+	// add chat, after notifications
+	// add api rate limiter = 60/min guest 100/min logged
+
 	log.Fatal(r.Run())
 
 	return nil
