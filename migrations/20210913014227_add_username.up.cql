@@ -1,1 +1,1 @@
-ALTER TABLE shwitter.users ADD username text;
+ALTER TABLE users ADD username text;

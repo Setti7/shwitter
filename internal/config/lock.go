@@ -18,7 +18,7 @@ func NewLockConfig(ctx *cli.Context) *LockConfig {
 	c := &LockConfig{}
 
 	if ctx == nil {
-		return &LockDefault
+		return &LockDefault // TODO fix how we set the default config
 	}
 
 	c.Host = ctx.String("redis-host")

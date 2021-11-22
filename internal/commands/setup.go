@@ -43,7 +43,7 @@ func setupAction(ctx *cli.Context) error {
 	c := config.NewConfig(ctx)
 	service.SetConfig(c)
 
-	// Create a new cassandra client to the system keyspace so we can create our own keyspace
+	// Create a new cassandra client to the system keyspace, so we can create our own keyspace
 	cluster := gocql.NewCluster(c.Cassandra().Hosts...)
 	cluster.Keyspace = "system"
 
@@ -54,7 +54,7 @@ func setupAction(ctx *cli.Context) error {
 	}
 
 	// Create the required keyspace
-	err = sess.Query(fmt.Sprintf("CREATE KEYSPACE %s WITH replication = "+
+	err = sess.Query(fmt.Sprintf("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = "+
 		"{'class': 'SimpleStrategy', 'replication_factor': 1};", c.Cassandra().Keyspace)).Exec()
 	if err != nil {
 		log.LogError("setupAction", fmt.Sprintf("Could not create the %s keyspace.",
