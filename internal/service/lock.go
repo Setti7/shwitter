@@ -1,7 +1,6 @@
 package service
 
 import (
-	"github.com/Setti7/shwitter/internal/config"
 	"github.com/bsm/redislock"
 	"github.com/go-redis/redis/v8"
 	"sync"
@@ -10,15 +9,17 @@ import (
 var onceLock sync.Once
 
 func initLock() {
+	c := conf.Lock()
+
 	client := redis.NewClient(&redis.Options{
 		Network: "tcp",
-		Addr:    config.LockDefault.Host + ":" + config.LockDefault.Port,
+		Addr:    c.Host,
 	})
-	services.Lock = redislock.New(client)
+	services.lock = redislock.New(client)
 }
 
 func Lock() *redislock.Client {
 	onceLock.Do(initLock)
 
-	return services.Lock
+	return services.lock
 }

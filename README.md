@@ -2,13 +2,7 @@ Shwitter
 
 ## Database migrations
 
-We are using [Journey](https://github.com/db-journey/journey) to manage the database migrations.
+We are using [migrate](https://github.com/golang-migrate/migrate/) to manage the database migrations.
+If you don't have it installed already, please go to [here](https://github.com/golang-migrate/migrate/blob/master/GETTING_STARTED.md) and follow the installation steps.
 
-Common commands:
-
-```bash
-make j                # Prints the base Journey command.
-make create-keyspace  # Create the keyspace for Cassandra.
-make migrate-up       # Apply all migrations.
-make create-migration # Creates an empty migration.
-```
+See makefile for common commands. TODO: write about using this pkg as a CLI and setting up the enviroment.

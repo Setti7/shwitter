@@ -2,6 +2,7 @@ package commands
 
 import (
 	"github.com/Setti7/shwitter/internal/api"
+	"github.com/Setti7/shwitter/internal/config"
 	"github.com/Setti7/shwitter/internal/middleware"
 	"github.com/Setti7/shwitter/internal/service"
 	"github.com/gin-gonic/gin"
@@ -15,9 +16,31 @@ var StartCommand = cli.Command{
 	Aliases: []string{"up"},
 	Usage:   "Starts the web server",
 	Action:  startAction,
+	Flags: []cli.Flag{
+		// Cassandra settings
+		&cli.StringSliceFlag{
+			Name:  "cassandra-hosts",
+			Value: cli.NewStringSlice(config.CassandraDefault.Hosts...),
+			Usage: "A list of the Cassandra hosts.",
+		},
+		&cli.StringFlag{
+			Name:  "cassandra-keyspace",
+			Value: config.CassandraDefault.Keyspace,
+			Usage: "The Cassandra keyspace for this app.",
+		},
+		// Redis settings
+		&cli.StringFlag{
+			Name:  "redis-host",
+			Value: config.LockDefault.Host,
+			Usage: "The host to connect to Redis.",
+		},
+	},
 }
 
-func startAction(_ *cli.Context) error {
+func startAction(ctx *cli.Context) error {
+	c := config.NewConfig(ctx)
+	service.SetConfig(c)
+
 	service.Init()
 	defer service.CleanUp()
 
