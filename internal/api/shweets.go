@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/Setti7/shwitter/internal/entity"
 	"github.com/Setti7/shwitter/internal/form"
 	"github.com/Setti7/shwitter/internal/middleware"
 	"github.com/Setti7/shwitter/internal/query"
@@ -32,32 +31,13 @@ func CreateShweet(c *gin.Context) {
 }
 
 func ListShweets(c *gin.Context) {
-	rawShweets, err := query.ListShweets()
+	shweets, err := query.ListShweets()
 	if err != nil {
 		util.AbortResponseUnexpectedError(c)
 		return
 	}
 
-	// Get the list of user IDs
-	var userIDs []string
-	for _, shweet := range rawShweets {
-		userIDs = append(userIDs, shweet.UserID)
-	}
-
-	// Enrich the shweets with the users info
-	users, err := query.EnrichUsers(userIDs)
-	if err != nil {
-		util.AbortResponseUnexpectedError(c)
-		return
-	}
-
-	var enriched_shweets = make([]entity.Shweet, 0)
-	for _, shweet := range rawShweets {
-		shweet.User = users[shweet.UserID]
-		enriched_shweets = append(enriched_shweets, shweet)
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": enriched_shweets})
+	c.JSON(http.StatusOK, gin.H{"data": shweets})
 }
 
 func GetShweet(c *gin.Context) {
@@ -69,16 +49,6 @@ func GetShweet(c *gin.Context) {
 	} else if err != nil {
 		util.AbortResponseUnexpectedError(c)
 		return
-	}
-
-	users, err := query.EnrichUsers([]string{shweet.UserID})
-	if err != nil {
-		util.AbortResponseUnexpectedError(c)
-		return
-	}
-
-	if len(users) > 0 {
-		shweet.User = users[shweet.UserID]
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": shweet})

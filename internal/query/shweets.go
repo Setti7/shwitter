@@ -8,7 +8,7 @@ import (
 	"github.com/gocql/gocql"
 )
 
-// Get a shweet by its ID
+// Get a shweet by its ID. The shweet is enriched.
 //
 // Returns ErrInvalidID if the ID is empty, ErrNotFound if the shweet was not found and ErrUnexpected
 // for any other errors.
@@ -32,6 +32,11 @@ func GetShweetByID(id string) (shweet entity.Shweet, err error) {
 		ID:      m["id"].(gocql.UUID).String(),
 		UserID:  m["user_id"].(gocql.UUID).String(),
 		Message: m["message"].(string),
+	}
+
+	err = EnrichShweetsWithUserInfo([]*entity.Shweet{&shweet})
+	if err != nil {
+		return shweet, err // we don't need to log the error because it's already logged inside that func
 	}
 
 	return shweet, nil
@@ -58,14 +63,39 @@ func CreateShweet(userID string, f form.CreateShweetForm) (string, error) {
 	return uuid.String(), err
 }
 
-// List all shweets
+// Enrich the user info of a slice of shweets
+//
+// Returns ErrUnexpected on any error.
+func EnrichShweetsWithUserInfo(shweets []*entity.Shweet) error {
+	// Get the list of user IDs
+	var userIDs []string
+	for _, shweet := range shweets {
+		userIDs = append(userIDs, shweet.UserID)
+	}
+
+	// Enrich the shweets with the users info
+	users, err := EnrichUsers(userIDs)
+	if err != nil {
+		log.LogError("query.EnrichShweetsWithUserInfo", "Could not enrich shweets", err)
+		return ErrUnexpected
+	}
+
+	for _, shweet := range shweets {
+		shweet.User = users[shweet.UserID]
+	}
+	return nil
+}
+
+// List all shweets. The returned list of Shweets are enriched.
 //
 // Returns ErrUnexpected for any errors.
-func ListShweets() (shweets []entity.Shweet, err error) {
+func ListShweets() (shweets []*entity.Shweet, err error) {
+	shweets = make([]*entity.Shweet, 0)
+
 	m := map[string]interface{}{}
 	iterable := service.Cassandra().Query("SELECT id, user_id, message FROM shweets").Iter()
 	for iterable.MapScan(m) {
-		shweets = append(shweets, entity.Shweet{
+		shweets = append(shweets, &entity.Shweet{
 			ID:      m["id"].(gocql.UUID).String(),
 			UserID:  m["user_id"].(gocql.UUID).String(),
 			Message: m["message"].(string),
@@ -77,6 +107,11 @@ func ListShweets() (shweets []entity.Shweet, err error) {
 	if err != nil {
 		log.LogError("query.ListShweets", "Error listing all shweets", err)
 		return shweets, ErrUnexpected
+	}
+
+	err = EnrichShweetsWithUserInfo(shweets)
+	if err != nil {
+		return shweets, err // we don't need to log the error because it's already logged inside that func
 	}
 
 	return shweets, err
