@@ -2,6 +2,8 @@ package config
 
 import (
 	"github.com/urfave/cli/v2"
+	"os"
+	"strings"
 )
 
 type CassandraConfig struct {
@@ -19,14 +21,34 @@ func (c *Config) Cassandra() *CassandraConfig {
 }
 
 func NewCassandraConfig(ctx *cli.Context) *CassandraConfig {
-	c := &CassandraConfig{}
+	c := &CassandraDefault
 
-	if ctx == nil {
-		return &CassandraDefault
-	}
-
-	c.Hosts = ctx.StringSlice("cassandra-hosts")
-	c.Keyspace = ctx.String("cassandra-keyspace")
+	getCassandraConfigFromEnv(c)
+	getCassandraConfigFromCLI(c, ctx)
 
 	return c
+}
+
+func getCassandraConfigFromEnv(c *CassandraConfig) {
+	hosts := os.Getenv(CASSANDRA_HOSTS_ENV)
+	if hosts != "" {
+		c.Hosts = strings.Split(hosts, ",")
+	}
+
+	keyspace := os.Getenv(CASSANDRA_KEYSPACE_ENV)
+	if keyspace != "" {
+		c.Keyspace = keyspace
+	}
+}
+
+func getCassandraConfigFromCLI(c *CassandraConfig, ctx *cli.Context) {
+	hosts := ctx.StringSlice(CASSANDRA_HOSTS_FLAG_NAME)
+	if len(hosts) > 0 {
+		c.Hosts = hosts
+	}
+
+	keyspace := ctx.String(CASSANDRA_KEYSPACE_FLAG_NAME)
+	if keyspace != "" {
+		c.Keyspace = keyspace
+	}
 }

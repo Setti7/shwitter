@@ -24,9 +24,6 @@ func main() {
 	app.EnableBashCompletion = true
 
 	// TODO add new commands
-	//  [ ] Setup initial environment -> create keyspace and migrate
-	//  [ ] Start docker-compose
-	//  [ ] Start with hot-reload (dev)
 	//  [ ] migrate down
 	//  [ ] clear database
 	//  [ ] backup database

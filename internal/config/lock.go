@@ -1,6 +1,9 @@
 package config
 
-import "github.com/urfave/cli/v2"
+import (
+	"github.com/urfave/cli/v2"
+	"os"
+)
 
 type LockConfig struct {
 	Host string
@@ -15,13 +18,18 @@ func (c *Config) Lock() *LockConfig {
 }
 
 func NewLockConfig(ctx *cli.Context) *LockConfig {
-	c := &LockConfig{}
+	c := &LockDefault
 
-	if ctx == nil {
-		return &LockDefault // TODO fix how we set the default config
-	}
-
-	c.Host = ctx.String("redis-host")
+	getLockConfigFromEnv(c)
+	getLockConfigFromCLI(c, ctx)
 
 	return c
+}
+
+func getLockConfigFromEnv(c *LockConfig) {
+	c.Host = os.Getenv(REDIS_HOST_ENV)
+}
+
+func getLockConfigFromCLI(c *LockConfig, ctx *cli.Context) {
+	c.Host = ctx.String(REDIS_HOST_FLAG_NAME)
 }

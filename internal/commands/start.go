@@ -16,25 +16,7 @@ var StartCommand = cli.Command{
 	Aliases: []string{"up"},
 	Usage:   "Starts the web server",
 	Action:  startAction,
-	Flags: []cli.Flag{
-		// Cassandra settings
-		&cli.StringSliceFlag{
-			Name:  "cassandra-hosts",
-			Value: cli.NewStringSlice(config.CassandraDefault.Hosts...),
-			Usage: "A list of the Cassandra hosts.",
-		},
-		&cli.StringFlag{
-			Name:  "cassandra-keyspace",
-			Value: config.CassandraDefault.Keyspace,
-			Usage: "The Cassandra keyspace for this app.",
-		},
-		// Redis settings
-		&cli.StringFlag{
-			Name:  "redis-host",
-			Value: config.LockDefault.Host,
-			Usage: "The host to connect to Redis.",
-		},
-	},
+	Flags:   config.Flags,
 }
 
 func startAction(ctx *cli.Context) error {
