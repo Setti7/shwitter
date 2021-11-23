@@ -24,13 +24,13 @@ func main() {
 	app.EnableBashCompletion = true
 
 	// TODO add new commands
-	//  [ ] migrate down
 	//  [ ] clear database
 	//  [ ] backup database
 	//  [ ] restore database
 	app.Commands = []*cli.Command{
 		&commands.StartCommand,
 		&commands.SetupCommand,
+		&commands.MigrateCommand,
 	}
 
 	if err := app.Run(os.Args); err != nil {
