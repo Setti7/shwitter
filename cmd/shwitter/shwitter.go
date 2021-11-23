@@ -25,8 +25,8 @@ func main() {
 
 	// TODO add new commands
 	//  [ ] clear database
-	//  [ ] backup database
-	//  [ ] restore database
+	//  [ ] create empty migration
+	//  [ ] Write about commands on README
 	app.Commands = []*cli.Command{
 		&commands.StartCommand,
 		&commands.SetupCommand,

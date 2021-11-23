@@ -11,17 +11,8 @@ up:
 csql: up
 	docker-compose exec cass_cluster cqlsh
 
-migrate:
-	echo "$(migrate_cmd)"
-
 create-migration:
 	$(migrate_cmd) migrate create $(name)
-
-migrate-up:
-	$(migrate_cmd) up
-
-migrate-down:
-	$(migrate_cmd) down
 
 clear-db:
 	$(migrate_cmd) down

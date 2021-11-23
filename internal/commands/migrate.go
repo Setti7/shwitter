@@ -11,7 +11,7 @@ import (
 
 var MigrateCommand = cli.Command{
 	Name:  "migrate",
-	Usage: "Migrates the database.",
+	Usage: "Migrates the database",
 	Description: "The argument is the number of migrations that will be run. If the argument is left empty, all " +
 		"migrations will be applied. If it's negative, then the last migrations will be rolled back.",
 	Action:    migrateAction,
