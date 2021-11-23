@@ -3,20 +3,19 @@ package commands
 import (
 	"fmt"
 	"github.com/Setti7/shwitter/internal/config"
-	"github.com/Setti7/shwitter/internal/log"
 	"github.com/Setti7/shwitter/internal/service"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/cassandra"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/urfave/cli/v2"
 	"strconv"
 )
 
 var MigrateCommand = cli.Command{
-	Name:   "migrate",
-	Usage:  "Migrates the database",
-	Action: migrateAction,
-	//ArgsUsage: TODO
+	Name:  "migrate",
+	Usage: "Migrates the database.",
+	Description: "The argument is the number of migrations that will be run. If the argument is left empty, all " +
+		"migrations will be applied. If it's negative, then the last migrations will be rolled back.",
+	Action:    migrateAction,
+	ArgsUsage: "[number of migrations]",
 	Flags: []cli.Flag{
 		&config.CassandraHostsFlag,
 		&config.CassandraKeyspaceFlag,
@@ -24,11 +23,10 @@ var MigrateCommand = cli.Command{
 }
 
 func migrateAction(ctx *cli.Context) (err error) {
-	var numOfMigrations int
-	runAllMigrations := ctx.NArg() == 0
+	numOfMigrations := 0 // by default, will run all migrations
 
 	// Parse the argument if there is any
-	if !runAllMigrations {
+	if ctx.NArg() == 1 {
 		arg := ctx.Args().Get(0)
 		numOfMigrations, err = strconv.Atoi(arg)
 		if err != nil {
@@ -46,33 +44,12 @@ func migrateAction(ctx *cli.Context) (err error) {
 	}
 	l.Infoln(fmt.Sprintf("Using %s keyspace.", c.Cassandra().Keyspace))
 
-	// Running migrations
-	d, err := cassandra.WithInstance(service.Cassandra(), &cassandra.Config{KeyspaceName: c.Cassandra().Keyspace,
-		MultiStatementEnabled: true})
+	err = runMigrations(c.Cassandra(), numOfMigrations)
 	if err != nil {
-		log.LogError("migrateAction", fmt.Sprintf("Could not connect to the %s keyspace.",
-			c.Cassandra().Keyspace), err)
 		return err
 	}
 
-	m, err := migrate.NewWithDatabaseInstance("file://migrations", c.Cassandra().Keyspace, d)
-	if err != nil {
-		log.LogError("migrateAction", "Could not find the migrations folder.", err)
-		return err
-	}
-
-	if runAllMigrations {
-		err = m.Up()
-	} else {
-		err = m.Steps(numOfMigrations)
-	}
-
-	if err != nil {
-		log.LogError("migrateAction", "Could not run migrations.", err)
-		return err
-	}
-
-	if runAllMigrations {
+	if numOfMigrations == 0 {
 		l.Infoln("All migrations ran successfully.")
 	} else {
 		l.Infoln(fmt.Sprintf("%d migration(s) ran successfully.", numOfMigrations))
