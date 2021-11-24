@@ -1,7 +1,5 @@
 package form
 
-// TODO rename file to user.go
-
 type CreateUserForm struct {
 	Username string `json:"username" binding:"required,alphanumunicode"`
 	Password string `json:"password" binding:"required,min=8"`
