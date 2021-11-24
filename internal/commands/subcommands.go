@@ -10,26 +10,33 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/cassandra"
 )
 
-func createKeyspace(c *config.CassandraConfig) (err error) {
-	// Create a new cassandra client to the system keyspace, so we can create our own keyspace
+func createCassandraSystemClient(c *config.CassandraConfig) (sess *gocql.Session, err error) {
 	cluster := gocql.NewCluster(c.Hosts...)
 	cluster.Keyspace = "system"
 
-	sess, err := cluster.CreateSession()
+	sess, err = cluster.CreateSession()
 	if err != nil {
-		log.LogError("createKeyspace", "Could not connect to the system keyspace on Cassandra", err)
-		return
+		log.LogError("createCassandraSystemClient", "Could not connect to the system keyspace on Cassandra", err)
 	}
+	return
+}
 
-	// Create the required keyspace
+func createKeyspace(sess *gocql.Session, c *config.CassandraConfig) (err error) {
 	err = sess.Query(fmt.Sprintf("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = "+
 		"{'class': 'SimpleStrategy', 'replication_factor': 1};", c.Keyspace)).Exec()
 	if err != nil {
 		log.LogError("createKeyspace",
 			fmt.Sprintf("Could not create the %s keyspace.", c.Keyspace), err)
 	}
+	return
+}
 
-	sess.Close()
+func dropKeyspace(sess *gocql.Session, c *config.CassandraConfig) (err error) {
+	err = sess.Query(fmt.Sprintf("DROP KEYSPACE %s", c.Keyspace)).Exec()
+	if err != nil {
+		log.LogError("dropKeyspace",
+			fmt.Sprintf("Could not drop the %s keyspace.", c.Keyspace), err)
+	}
 	return
 }
 

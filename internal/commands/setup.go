@@ -19,7 +19,13 @@ func setupAction(ctx *cli.Context) error {
 	c := config.NewConfig(ctx)
 	service.SetConfig(c)
 
-	err := createKeyspace(c.Cassandra())
+	sess, err := createCassandraSystemClient(c.Cassandra())
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
+
+	err = createKeyspace(sess, c.Cassandra())
 	if err != nil {
 		return err
 	}
