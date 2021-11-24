@@ -9,7 +9,7 @@ import (
 var onceLock sync.Once
 
 func initLock() {
-	c := conf.Lock()
+	c := conf.Redis()
 
 	client := redis.NewClient(&redis.Options{
 		Network: "tcp",

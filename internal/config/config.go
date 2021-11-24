@@ -6,13 +6,13 @@ import (
 
 type Config struct {
 	cassandra *CassandraConfig
-	lock      *LockConfig // TODO change to RedisCondig
+	redis     *RedisConfig
 }
 
 func NewConfig(ctx *cli.Context) *Config {
 	c := &Config{
 		cassandra: NewCassandraConfig(ctx),
-		lock:      NewLockConfig(ctx),
+		redis:     NewRedisConfig(ctx),
 	}
 
 	return c
