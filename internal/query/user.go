@@ -101,21 +101,35 @@ func CreateNewUserWithCredentials(f form.CreateUserForm) (user entity.User, err 
 	return user, err
 }
 
-func listFriendsOrFollowers(userID string, useFriendsTable bool) ([]*entity.FriendOrFollower, error) {
+// TODO read this: https://stackoverflow.com/questions/17025490/cassandra-limit-10-20-clause
+func listFriendsOrFollowers(userID string, useFriendsTable bool, p *form.Paginator) ([]*entity.FriendOrFollower, error) {
 	friendOrFollowers := make([]*entity.FriendOrFollower, 0)
 	if userID == "" {
 		return friendOrFollowers, ErrInvalidID
 	}
 
-	var q string
+	var iterable *gocql.Iter
 	if useFriendsTable {
-		q = "SELECT friend_id, since FROM friends WHERE user_id=?"
+		if p.Ref == "" {
+			iterable = service.Cassandra().Query(
+				"SELECT friend_id, since FROM friends WHERE user_id = ? LIMIT ?", userID, p.NumResults).Iter()
+		} else {
+			iterable = service.Cassandra().Query(
+				"SELECT friend_id, since FROM friends WHERE user_id = ? AND friend_id > ? LIMIT ?",
+				userID, p.Ref, p.NumResults).Iter()
+		}
 	} else {
-		q = "SELECT follower_id, since FROM followers WHERE user_id=?"
+		if p.Ref == "" {
+			iterable = service.Cassandra().Query(
+				"SELECT follower_id, since FROM followers WHERE user_id = ? LIMIT ?", userID, p.NumResults).Iter()
+		} else {
+			iterable = service.Cassandra().Query(
+				"SELECT follower_id, since FROM followers WHERE user_id = ? AND follower_id > ? LIMIT ?",
+				userID, p.Ref, p.NumResults).Iter()
+		}
 	}
 
 	m := map[string]interface{}{}
-	iterable := service.Cassandra().Query(q, userID).Iter()
 	for iterable.MapScan(m) {
 		var friendOrFollowerID string
 
@@ -161,15 +175,15 @@ func listFriendsOrFollowers(userID string, useFriendsTable bool) ([]*entity.Frie
 // List all followers of a given user
 //
 // Returns ErrInvalidID if the ID is empty and ErrUnexpected on any other errors.
-func ListFollowers(userID string) ([]*entity.FriendOrFollower, error) {
-	return listFriendsOrFollowers(userID, false)
+func ListFollowers(userID string, p *form.Paginator) ([]*entity.FriendOrFollower, error) {
+	return listFriendsOrFollowers(userID, false, p)
 }
 
 // List all friends of a given user
 //
 // Returns ErrInvalidID if the ID is empty and ErrUnexpected on any other errors.
-func ListFriends(userID string) ([]*entity.FriendOrFollower, error) {
-	return listFriendsOrFollowers(userID, true)
+func ListFriends(userID string, p *form.Paginator) ([]*entity.FriendOrFollower, error) {
+	return listFriendsOrFollowers(userID, true, p)
 }
 
 // Make a user follow another user. Make sure userID is a valid user.

@@ -78,11 +78,16 @@ func ListFriendsOrFollowers(isFriend bool) gin.HandlerFunc {
 		var err error
 		userID := c.Param("id")
 
+		p, err := form.BindPaginatorOrAbort(c)
+		if err != nil {
+			return
+		}
+
 		var friendsOrFollowers []*entity.FriendOrFollower
 		if isFriend {
-			friendsOrFollowers, err = query.ListFriends(userID)
+			friendsOrFollowers, err = query.ListFriends(userID, p)
 		} else {
-			friendsOrFollowers, err = query.ListFollowers(userID)
+			friendsOrFollowers, err = query.ListFollowers(userID, p)
 		}
 
 		if err != nil {
