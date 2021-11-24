@@ -25,3 +25,5 @@ We are using [migrate](https://github.com/golang-migrate/migrate/) to manage the
 it installed already, please go to
 [here](https://github.com/golang-migrate/migrate/blob/master/GETTING_STARTED.md) and follow the installation steps.
 
+To create new database migrations, use `make create-migration name=$MIGRATION_NAME`.
+

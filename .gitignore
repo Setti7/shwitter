@@ -92,3 +92,6 @@ fabric.properties
 # The generated binary
 internal/shwitter
 tmp/
+
+# Binary
+shwitter

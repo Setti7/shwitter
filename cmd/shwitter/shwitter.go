@@ -23,9 +23,6 @@ func main() {
 	app.Copyright = "(c) 2021 André Niero Setti <ansetti7@gmail.com>"
 	app.EnableBashCompletion = true
 
-	// TODO add new commands
-	//  [ ] create empty migration
-	//  [ ] Write about commands on README
 	app.Commands = []*cli.Command{
 		&commands.StartCommand,
 		&commands.SetupCommand,
