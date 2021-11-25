@@ -93,7 +93,7 @@ func ListFriendsOrFollowers(isFriend bool) gin.HandlerFunc {
 		if err != nil {
 			util.AbortResponseUnexpectedError(c)
 		} else {
-			c.JSON(http.StatusOK, gin.H{"data": friendsOrFollowers})
+			c.JSON(http.StatusOK, gin.H{"data": friendsOrFollowers, "meta": p})
 		}
 	}
 }

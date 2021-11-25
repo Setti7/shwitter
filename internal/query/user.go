@@ -101,33 +101,21 @@ func CreateNewUserWithCredentials(f form.CreateUserForm) (user entity.User, err 
 	return user, err
 }
 
-// TODO read this: https://stackoverflow.com/questions/17025490/cassandra-limit-10-20-clause
 func listFriendsOrFollowers(userID string, useFriendsTable bool, p *form.Paginator) ([]*entity.FriendOrFollower, error) {
-	friendOrFollowers := make([]*entity.FriendOrFollower, 0)
 	if userID == "" {
-		return friendOrFollowers, ErrInvalidID
+		return nil, ErrInvalidID
 	}
 
-	var iterable *gocql.Iter
+	var q string
 	if useFriendsTable {
-		if p.Ref == "" {
-			iterable = service.Cassandra().Query(
-				"SELECT friend_id, since FROM friends WHERE user_id = ? LIMIT ?", userID, p.NumResults).Iter()
-		} else {
-			iterable = service.Cassandra().Query(
-				"SELECT friend_id, since FROM friends WHERE user_id = ? AND friend_id > ? LIMIT ?",
-				userID, p.Ref, p.NumResults).Iter()
-		}
+		q = "SELECT friend_id, since FROM friends WHERE user_id = ?"
 	} else {
-		if p.Ref == "" {
-			iterable = service.Cassandra().Query(
-				"SELECT follower_id, since FROM followers WHERE user_id = ? LIMIT ?", userID, p.NumResults).Iter()
-		} else {
-			iterable = service.Cassandra().Query(
-				"SELECT follower_id, since FROM followers WHERE user_id = ? AND follower_id > ? LIMIT ?",
-				userID, p.Ref, p.NumResults).Iter()
-		}
+		q = "SELECT follower_id, since FROM followers WHERE user_id = ?"
 	}
+
+	iterable := p.PaginateQuery(service.Cassandra().Query(q, userID)).Iter()
+	p.SetResults(iterable)
+	friendOrFollowers := make([]*entity.FriendOrFollower, 0, iterable.NumRows()) // TODO do this to all LIST things
 
 	m := map[string]interface{}{}
 	for iterable.MapScan(m) {
@@ -150,7 +138,7 @@ func listFriendsOrFollowers(userID string, useFriendsTable bool, p *form.Paginat
 	err := iterable.Close()
 	if err != nil {
 		log.LogError("query.listFriendsOrFollowers", "Could not list friends/followers for user", err)
-		return friendOrFollowers, ErrUnexpected
+		return nil, ErrUnexpected
 	}
 
 	var friendOrFollowerIDs []string
@@ -162,7 +150,7 @@ func listFriendsOrFollowers(userID string, useFriendsTable bool, p *form.Paginat
 	users, err := EnrichUsers(friendOrFollowerIDs)
 	if err != nil {
 		// We don't need to log error here because its already logged inside EnrichUsers
-		return friendOrFollowers, ErrUnexpected
+		return nil, ErrUnexpected
 	}
 
 	for _, f := range friendOrFollowers {
