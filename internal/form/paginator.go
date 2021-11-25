@@ -6,7 +6,6 @@ import (
 	"github.com/gocql/gocql"
 )
 
-// TODO: move this to a module?
 type Paginator struct {
 	PageState  string `form:"page_state" json:"page_state"`
 	PerPage    int    `form:"per_page,default=30" binding:"numeric,gte=1,lte=100" json:"-"`

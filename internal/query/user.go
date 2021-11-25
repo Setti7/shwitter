@@ -115,7 +115,7 @@ func listFriendsOrFollowers(userID string, useFriendsTable bool, p *form.Paginat
 
 	iterable := p.PaginateQuery(service.Cassandra().Query(q, userID)).Iter()
 	p.SetResults(iterable)
-	friendOrFollowers := make([]*entity.FriendOrFollower, 0, iterable.NumRows()) // TODO do this to all LIST things
+	friendOrFollowers := make([]*entity.FriendOrFollower, 0, iterable.NumRows())
 
 	m := map[string]interface{}{}
 	for iterable.MapScan(m) {

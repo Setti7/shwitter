@@ -35,7 +35,6 @@ func startAction(ctx *cli.Context) error {
 	r.GET("/shweets", api.ListShweets)
 	r.GET("/shweets/:id", api.GetShweet)
 
-	// TODO: add pagination to ListUsers, ListShweets, ListFollowers and ListFriends
 	// TODO: add timeline and userline
 	// TODO: add tests
 	r.GET("/users", api.ListUsers)
