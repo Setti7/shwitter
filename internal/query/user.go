@@ -42,8 +42,8 @@ func GetUserByID(id string) (user entity.User, err error) {
 // Enrich a list of userIDs
 //
 // Returns ErrUnexpected on any errors.
-func EnrichUsers(ids []string) (userMap map[string]*entity.User, err error) {
-	userMap = make(map[string]*entity.User)
+func EnrichUsers(ids []string) (map[string]*entity.User, error) {
+	userMap := make(map[string]*entity.User)
 
 	if len(ids) > 0 {
 		m := map[string]interface{}{}
@@ -58,10 +58,10 @@ func EnrichUsers(ids []string) (userMap map[string]*entity.User, err error) {
 			m = map[string]interface{}{}
 		}
 
-		err = iterable.Close()
+		err := iterable.Close()
 		if err != nil {
 			log.LogError("query.EnrichUsers", "Could not enrich users", err)
-			return userMap, ErrUnexpected
+			return nil, ErrUnexpected
 		}
 	}
 
@@ -235,10 +235,11 @@ func UnFollowUser(userID string, otherUserID string) error {
 //
 // Returns ErrUnexpected on any errors.
 func ListUsers() (users []*entity.User, err error) {
-	users = make([]*entity.User, 0)
+
+	iterable := service.Cassandra().Query("SELECT id, username, name, email, bio FROM users").Iter()
+	users = make([]*entity.User, 0, iterable.NumRows())
 
 	m := map[string]interface{}{}
-	iterable := service.Cassandra().Query("SELECT id, username, name, email, bio FROM users").Iter()
 	for iterable.MapScan(m) {
 		users = append(users, &entity.User{
 			ID:       m["id"].(gocql.UUID).String(),
@@ -253,7 +254,7 @@ func ListUsers() (users []*entity.User, err error) {
 	err = iterable.Close()
 	if err != nil {
 		log.LogError("query.ListUsers", "Could not list all users", err)
-		return users, ErrUnexpected
+		return nil, ErrUnexpected
 	}
 
 	return users, nil

@@ -23,7 +23,7 @@ func BindJSONOrAbort(c *gin.Context, obj interface{}) ErrorMap {
 
 func listOfErrors(obj interface{}, e error) ErrorMap {
 	ve := e.(validator.ValidationErrors)
-	InvalidFields := make(ErrorMap, 0)
+	invalidFields := make(ErrorMap, 0, len(ve))
 
 	for _, e := range ve {
 		errors := map[string]string{}
@@ -31,10 +31,10 @@ func listOfErrors(obj interface{}, e error) ErrorMap {
 		field, _ := reflect.TypeOf(obj).Elem().FieldByName(e.Field())
 		jsonTag := string(field.Tag.Get("json"))
 		errors[jsonTag] = validationErrorToText(e)
-		InvalidFields = append(InvalidFields, errors)
+		invalidFields = append(invalidFields, errors)
 	}
 
-	return InvalidFields
+	return invalidFields
 }
 
 func validationErrorToText(e validator.FieldError) string {

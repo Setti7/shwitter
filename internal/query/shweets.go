@@ -89,11 +89,12 @@ func EnrichShweetsWithUserInfo(shweets []*entity.Shweet) error {
 // List all shweets. The returned list of Shweets are enriched.
 //
 // Returns ErrUnexpected for any errors.
-func ListShweets() (shweets []*entity.Shweet, err error) {
-	shweets = make([]*entity.Shweet, 0)
+func ListShweets() ([]*entity.Shweet, error) {
+
+	iterable := service.Cassandra().Query("SELECT id, user_id, message FROM shweets").Iter()
+	shweets := make([]*entity.Shweet, 0, iterable.NumRows())
 
 	m := map[string]interface{}{}
-	iterable := service.Cassandra().Query("SELECT id, user_id, message FROM shweets").Iter()
 	for iterable.MapScan(m) {
 		shweets = append(shweets, &entity.Shweet{
 			ID:      m["id"].(gocql.UUID).String(),
@@ -103,16 +104,16 @@ func ListShweets() (shweets []*entity.Shweet, err error) {
 		m = map[string]interface{}{}
 	}
 
-	err = iterable.Close()
+	err := iterable.Close()
 	if err != nil {
 		log.LogError("query.ListShweets", "Error listing all shweets", err)
-		return shweets, ErrUnexpected
+		return nil, ErrUnexpected
 	}
 
 	err = EnrichShweetsWithUserInfo(shweets)
 	if err != nil {
-		return shweets, err // we don't need to log the error because it's already logged inside that func
+		return nil, err // we don't need to log the error because it's already logged inside that func
 	}
 
-	return shweets, err
+	return shweets, nil
 }

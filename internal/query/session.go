@@ -39,15 +39,17 @@ func GetSession(userID string, sessID string) (sess entity.Session, err error) {
 // Get all sessions for a given user
 //
 // Returns ErrInvalidID if the userID is empty and ErrUnexpected for any other errors.
-func ListSessionsForUser(userID string) (sessions []entity.Session, err error) {
-	sessions = make([]entity.Session, 0)
+func ListSessionsForUser(userID string) ([]*entity.Session, error) {
 	if userID == "" {
-		return sessions, ErrInvalidID
+		return nil, ErrInvalidID
 	}
 
 	query := "SELECT id, user_id, expiration FROM sessions WHERE user_id=?"
-	m := map[string]interface{}{}
 	iterator := service.Cassandra().Query(query, userID).Iter()
+
+	sessions := make([]*entity.Session, 0, iterator.NumRows())
+
+	m := map[string]interface{}{}
 	for iterator.MapScan(m) {
 		sess := entity.Session{
 			ID:         m["id"].(string),
@@ -55,17 +57,17 @@ func ListSessionsForUser(userID string) (sessions []entity.Session, err error) {
 			Expiration: m["expiration"].(time.Time),
 		}
 		sess.CreateToken()
-		sessions = append(sessions, sess)
+		sessions = append(sessions, &sess)
 		m = map[string]interface{}{}
 	}
 
-	err = iterator.Close()
+	err := iterator.Close()
 	if err != nil {
 		log.LogError("query.ListSessionsForUser", "Could list the user sessions", err)
-		return sessions, ErrUnexpected
+		return nil, ErrUnexpected
 	}
 
-	return sessions, err
+	return sessions, nil
 }
 
 // Create a session for userID. Make sure the given userID exists.
