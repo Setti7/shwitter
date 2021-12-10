@@ -1,6 +1,7 @@
 package query
 
 import (
+	"fmt"
 	"github.com/Setti7/shwitter/internal/entity"
 	"github.com/Setti7/shwitter/internal/log"
 	"github.com/Setti7/shwitter/internal/service"
@@ -12,8 +13,12 @@ import (
 //
 // Returns ErrUnexpected for any errors.
 // TODO: add pagination
-func GetTimelineForUser(userID string) ([]*entity.Shweet, error) {
-	q := "SELECT shweet_id, shweet_message, posted_by, created_at FROM timeline WHERE user_id = ?"
+func GetLineForUser(userID string, line entity.Line) ([]*entity.Shweet, error) {
+	if userID == "" {
+		return nil, ErrInvalidID
+	}
+
+	q := fmt.Sprintf("SELECT shweet_id, shweet_message, posted_by, created_at FROM %s WHERE user_id = ?", line)
 	iterable := service.Cassandra().Query(q, userID).Iter()
 	shweets := make([]*entity.Shweet, 0, iterable.NumRows())
 
@@ -30,7 +35,7 @@ func GetTimelineForUser(userID string) ([]*entity.Shweet, error) {
 
 	err := iterable.Close()
 	if err != nil {
-		log.LogError("query.GetTimelineForUser", "Error getting timeline for user", err)
+		log.LogError("query.GetLineForUser", "Error getting timeline for user", err)
 		return nil, ErrUnexpected
 	}
 
@@ -42,14 +47,14 @@ func GetTimelineForUser(userID string) ([]*entity.Shweet, error) {
 	return shweets, nil
 }
 
-// Insert a shweet into the given user timeline
+// Insert a shweet into a line for a specific user.
 //
 // Returns ErrUnexpected for any errors.
-func InsertShweetIntoUserTimeline(userID string, s *entity.Shweet) error {
-	q := "INSERT INTO timeline (user_id, shweet_id, shweet_message, posted_by, created_at) VALUES (?, ?, ?, ?, ?)"
+func InsertShweetIntoLine(userID string, s *entity.Shweet, line entity.Line) error {
+	q := fmt.Sprintf("INSERT INTO %s (user_id, shweet_id, shweet_message, posted_by, created_at) VALUES (?, ?, ?, ?, ?)", line)
 	err := service.Cassandra().Query(q, userID, s.ID, s.Message, s.UserID, s.CreatedAt).Exec()
 	if err != nil {
-		log.LogError("query.InsertShweetIntoUserTimeline", "Error while inserting shweet into user timeline", err)
+		log.LogError("query.InsertShweetIntoLine", "Error while inserting shweet into user timeline", err)
 		return ErrUnexpected
 	}
 
@@ -69,7 +74,7 @@ func BulkInsertShweetIntoFollowersTimelines(userID string, s *entity.Shweet) err
 	// If the user has millions of followers this will probably not work.
 	for _, followerID := range followerIDs {
 		go func(ID string) {
-			_ = InsertShweetIntoUserTimeline(ID, s)
+			_ = InsertShweetIntoLine(ID, s, entity.TimeLine)
 		}(followerID)
 	}
 

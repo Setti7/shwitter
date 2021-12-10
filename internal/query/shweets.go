@@ -55,7 +55,7 @@ func CreateShweet(userID string, f form.CreateShweetForm) (string, error) {
 
 	// TODO - Insert into:
 	// 	[X] Shweets table
-	// 	[ ] Current user userline
+	// 	[X] Current user userline
 	// 	[X] Current user timeline
 	// 	[X] Timelines of all followers of current user
 	// 	[ ] Public timeline if user has more than a lot of followers
@@ -76,7 +76,14 @@ func CreateShweet(userID string, f form.CreateShweetForm) (string, error) {
 
 	// Insert shweet into current user timeline.
 	// This is done synchronously, so we can verify it worked properly.
-	err = InsertShweetIntoUserTimeline(userID, shweet)
+	err = InsertShweetIntoLine(userID, shweet, entity.TimeLine)
+	if err != nil {
+		return "", err
+	}
+
+	// Insert shweet into current user userline.
+	// This is done synchronously, so we can verify it worked properly.
+	err = InsertShweetIntoLine(userID, shweet, entity.UserLine)
 	if err != nil {
 		return "", err
 	}

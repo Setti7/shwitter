@@ -50,7 +50,11 @@ func startAction(ctx *cli.Context) error {
 	r.DELETE("/sessions/:id", api.DeleteSession)
 	r.GET("/sessions", api.ListUserSessions)
 
+	// TODO:
+	//  Add a test where 50K users are created, with each of them following other users (following the twitter
+	//  followers dataset distribution), and then check if the most famous user can shweet a message for everyone.
 	r.GET("/timeline", api.GetTimelineForCurrentUser)
+	r.GET("/userline/:id", api.GetUserLine)
 
 	// add mentions, then add mentions notifications
 	// add chat, after notifications

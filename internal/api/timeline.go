@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/Setti7/shwitter/internal/entity"
 	"github.com/Setti7/shwitter/internal/middleware"
 	"github.com/Setti7/shwitter/internal/query"
 	"github.com/Setti7/shwitter/internal/util"
@@ -14,7 +15,19 @@ func GetTimelineForCurrentUser(c *gin.Context) {
 		return
 	}
 
-	shweets, err := query.GetTimelineForUser(user.ID)
+	shweets, err := query.GetLineForUser(user.ID, entity.TimeLine)
+	if err != nil {
+		util.AbortResponseUnexpectedError(c)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": shweets})
+}
+
+func GetUserLine(c *gin.Context) {
+	userID := c.Param("id")
+
+	shweets, err := query.GetLineForUser(userID, entity.TimeLine)
 	if err != nil {
 		util.AbortResponseUnexpectedError(c)
 		return
