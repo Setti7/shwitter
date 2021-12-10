@@ -36,7 +36,7 @@ func startAction(ctx *cli.Context) error {
 	r.GET("/shweets/:id", api.GetShweet)
 
 	// TODO: add timeline and userline
-	// TODO: add tests
+	// TODO: add tests, interface and channels
 	r.GET("/users", api.ListUsers)
 	r.GET("/users/:id", api.GetUser)
 	r.POST("/users", api.CreateUser)
@@ -49,6 +49,8 @@ func startAction(ctx *cli.Context) error {
 	r.POST("/sessions", api.CreateSession)
 	r.DELETE("/sessions/:id", api.DeleteSession)
 	r.GET("/sessions", api.ListUserSessions)
+
+	r.GET("/timeline", api.GetTimelineForCurrentUser)
 
 	// add mentions, then add mentions notifications
 	// add chat, after notifications

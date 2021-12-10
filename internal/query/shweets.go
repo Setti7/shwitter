@@ -6,6 +6,7 @@ import (
 	"github.com/Setti7/shwitter/internal/log"
 	"github.com/Setti7/shwitter/internal/service"
 	"github.com/gocql/gocql"
+	"time"
 )
 
 // Get a shweet by its ID. The shweet is enriched.
@@ -52,12 +53,39 @@ func CreateShweet(userID string, f form.CreateShweetForm) (string, error) {
 
 	uuid := gocql.TimeUUID()
 
-	err := service.Cassandra().Query(`INSERT INTO shweets (id, user_id, message) VALUES (?, ?, ?)`,
-		uuid, userID, f.Message).Exec()
+	// TODO - Insert into:
+	// 	[X] Shweets table
+	// 	[ ] Current user userline
+	// 	[X] Current user timeline
+	// 	[X] Timelines of all followers of current user
+	// 	[ ] Public timeline if user has more than a lot of followers
 
+	// Create the shweet
+	shweet := &entity.Shweet{
+		ID:        uuid.String(),
+		UserID:    userID,
+		Message:   f.Message,
+		CreatedAt: time.Now(),
+	}
+	err := service.Cassandra().Query("INSERT INTO shweets (id, user_id, message) VALUES (?, ?, ?)", uuid, userID,
+		f.Message).Exec()
 	if err != nil {
-		log.LogError("query.CreateShweet", "Error creating a shweet", err)
+		log.LogError("query.CreateShweet", "Error creating shweet", err)
 		return "", ErrUnexpected
+	}
+
+	// Insert shweet into current user timeline
+	go func() {
+		_ = InsertShweetIntoUserTimeline(userID, shweet)
+	}()
+
+	// Creating goroutines to insert the new shweet into all followers IDS
+	// If the user has millions of followers this will probably not work.
+	followerIDs, err := GetAllUserFollowersIDs(userID)
+	for _, followerID := range followerIDs {
+		go func(ID string) {
+			_ = InsertShweetIntoUserTimeline(ID, shweet)
+		}(followerID)
 	}
 
 	return uuid.String(), err

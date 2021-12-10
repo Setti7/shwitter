@@ -160,6 +160,31 @@ func listFriendsOrFollowers(userID string, useFriendsTable bool, p *form.Paginat
 	return friendOrFollowers, nil
 }
 
+func GetAllUserFollowersIDs(userID string) ([]string, error) {
+	if userID == "" {
+		return nil, ErrInvalidID
+	}
+
+	q := "SELECT follower_id FROM followers WHERE user_id = ?"
+	iterable := service.Cassandra().Query(q, userID).Iter()
+	followers := make([]string, 0, iterable.NumRows())
+	scanner := iterable.Scanner()
+
+	for scanner.Next() {
+		var id gocql.UUID
+		err := scanner.Scan(&id)
+
+		if err != nil {
+			log.LogError("query.GetAllUserFollowersIDs", "Error while getting all followers for user", err)
+			return nil, ErrUnexpected
+		}
+
+		followers = append(followers, id.String())
+	}
+
+	return followers, nil
+}
+
 // List all followers of a given user
 //
 // Returns ErrInvalidID if the ID is empty and ErrUnexpected on any other errors.
