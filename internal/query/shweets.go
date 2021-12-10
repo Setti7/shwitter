@@ -74,18 +74,18 @@ func CreateShweet(userID string, f form.CreateShweetForm) (string, error) {
 		return "", ErrUnexpected
 	}
 
-	// Insert shweet into current user timeline
-	go func() {
-		_ = InsertShweetIntoUserTimeline(userID, shweet)
-	}()
+	// Insert shweet into current user timeline.
+	// This is done synchronously, so we can verify it worked properly.
+	err = InsertShweetIntoUserTimeline(userID, shweet)
+	if err != nil {
+		return "", err
+	}
 
-	// Creating goroutines to insert the new shweet into all followers IDS
-	// If the user has millions of followers this will probably not work.
-	followerIDs, err := GetAllUserFollowersIDs(userID)
-	for _, followerID := range followerIDs {
-		go func(ID string) {
-			_ = InsertShweetIntoUserTimeline(ID, shweet)
-		}(followerID)
+	// Insert shweet into followers timeline.
+	// This is done asynchronously for performance.
+	err = BulkInsertShweetIntoFollowersTimelines(userID, shweet)
+	if err != nil {
+		return "", err
 	}
 
 	return uuid.String(), err

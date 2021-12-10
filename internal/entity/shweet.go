@@ -8,4 +8,5 @@ type Shweet struct {
 	Message   string    `json:"message"`
 	User      *User     `json:"user,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
+	// TODO add like count (use a cassandra Counter into the shweets table, and enrich that data with a new query, async)
 }

@@ -8,9 +8,11 @@ import (
 	"time"
 )
 
-// TODO: add pagination and like count (for likes, use a cassandra Counter into the shweets table, and enrich that data with a new query, async)
+// Get the timeline for the given user. The returned list of Shweets are enriched.
+//
+// Returns ErrUnexpected for any errors.
+// TODO: add pagination
 func GetTimelineForUser(userID string) ([]*entity.Shweet, error) {
-
 	q := "SELECT shweet_id, shweet_message, posted_by, created_at FROM timeline WHERE user_id = ?"
 	iterable := service.Cassandra().Query(q, userID).Iter()
 	shweets := make([]*entity.Shweet, 0, iterable.NumRows())
@@ -40,12 +42,35 @@ func GetTimelineForUser(userID string) ([]*entity.Shweet, error) {
 	return shweets, nil
 }
 
+// Insert a shweet into the given user timeline
+//
+// Returns ErrUnexpected for any errors.
 func InsertShweetIntoUserTimeline(userID string, s *entity.Shweet) error {
 	q := "INSERT INTO timeline (user_id, shweet_id, shweet_message, posted_by, created_at) VALUES (?, ?, ?, ?, ?)"
 	err := service.Cassandra().Query(q, userID, s.ID, s.Message, s.UserID, s.CreatedAt).Exec()
 	if err != nil {
 		log.LogError("query.InsertShweetIntoUserTimeline", "Error while inserting shweet into user timeline", err)
 		return ErrUnexpected
+	}
+
+	return nil
+}
+
+// Insert a shweet into the the timeline of all followers of the given user
+//
+// Returns ErrUnexpected for any errors.
+func BulkInsertShweetIntoFollowersTimelines(userID string, s *entity.Shweet) error {
+	followerIDs, err := GetAllUserFollowersIDs(userID)
+	if err != nil {
+		return err
+	}
+
+	// Creating goroutines to insert the new shweet into all followers IDS
+	// If the user has millions of followers this will probably not work.
+	for _, followerID := range followerIDs {
+		go func(ID string) {
+			_ = InsertShweetIntoUserTimeline(ID, s)
+		}(followerID)
 	}
 
 	return nil
