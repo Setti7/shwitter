@@ -9,7 +9,7 @@ up:
 	docker-compose up -d
 
 csql: up
-	docker-compose exec cass_cluster cqlsh
+	docker-compose exec cassandra cqlsh
 
 create-migration:
 	migrate create -ext cql -dir ./migrations $(name)

@@ -10,7 +10,7 @@ import (
 )
 
 func abortInvalidUsernameAndPassword(c *gin.Context) {
-	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username/password."})
+	c.JSON(http.StatusUnauthorized, gin.H{"nonFieldErrors": "Invalid username/password."})
 }
 
 func CreateSession(c *gin.Context) {
@@ -22,7 +22,7 @@ func CreateSession(c *gin.Context) {
 	}
 
 	if !f.HasCredentials() {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "username and password are required."})
+		c.JSON(http.StatusBadRequest, gin.H{"nonFieldErrors": "username and password are required."})
 	} else {
 		userID, creds, err := query.GetUserCredentials(f.Username)
 		if err != nil {

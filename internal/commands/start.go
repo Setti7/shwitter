@@ -5,10 +5,12 @@ import (
 	"github.com/Setti7/shwitter/internal/config"
 	"github.com/Setti7/shwitter/internal/middleware"
 	"github.com/Setti7/shwitter/internal/service"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/urfave/cli/v2"
 	"log"
 	"net/http"
+	"time"
 )
 
 var StartCommand = cli.Command{
@@ -27,6 +29,13 @@ func startAction(ctx *cli.Context) error {
 	defer service.CleanUp()
 
 	r := gin.Default()
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"PUT", "PATCH", "GET", "POST", "DELETE", "HEAD"},
+		AllowHeaders:     []string{"Content-Length", "Content-Type", "accept", "origin", "Cache-Control", "X-Session-Token"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 	r.Use(middleware.SessionMiddleware())
 
 	r.GET("/healthz", heartbeat)
@@ -35,7 +44,6 @@ func startAction(ctx *cli.Context) error {
 	r.GET("/shweets", api.ListShweets)
 	r.GET("/shweets/:id", api.GetShweet)
 
-	// TODO: add timeline and userline
 	// TODO: add tests, interface and channels
 	r.GET("/users", api.ListUsers)
 	r.GET("/users/:id", api.GetUser)
