@@ -1,24 +1,24 @@
 import { createTheme } from "@mui/material";
 
 const theme = createTheme({
-  // palette: {
-  //   primary: {
-  //     main: "#FF6E19",
-  //     contrastText: "#FFFFFF",
-  //   },
-  //   secondary: {
-  //     main: "#009493",
-  //   },
-  //   error: {
-  //     main: red.A400,
-  //   },
-  //   background: {
-  //     default: "#fff",
-  //   },
-  // },
-  // typography: {
-  //   fontFamily: '"Helvetica", "Arial", sans-serif',
-  // },
+  palette: {
+    mode: "dark",
+    // primary: {
+    //   light: "#757ce8",
+    //   main: "#3f50b5",
+    //   dark: "#002884",
+    //   contrastText: "#fff",
+    // },
+    // secondary: {
+    //   light: "#ff7961",
+    //   main: "#f44336",
+    //   dark: "#ba000d",
+    //   contrastText: "#000",
+    // },
+  },
+  typography: {
+    fontFamily: '"Signika", "Helvetica", "Arial", sans-serif',
+  },
 });
 
 export default theme;

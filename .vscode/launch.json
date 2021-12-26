@@ -10,7 +10,8 @@
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceFolder}/cmd/shwitter",
-            "args": ["start"]
+            "args": ["start"],
+            "preLaunchTask": "compose up"
         }
     ]
 }

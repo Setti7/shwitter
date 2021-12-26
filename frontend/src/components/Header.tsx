@@ -1,15 +1,48 @@
-import { Box, Container, Typography } from "@mui/material";
-import React from "react";
+import * as React from "react";
+import AppBar from "@mui/material/AppBar";
+import Box from "@mui/material/Box";
+import Toolbar from "@mui/material/Toolbar";
+import Typography from "@mui/material/Typography";
+import IconButton from "@mui/material/IconButton";
+import { AuthContext } from "../contexts/auth";
+import { Avatar, Tooltip } from "@mui/material";
+import LogoutIcon from "@mui/icons-material/Logout";
 
-const Header: React.FC = () => {
+const Header = () => {
+  const { user, authLogout } = React.useContext(AuthContext);
+
+  if (user === undefined) {
+    return <></>;
+  }
+
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ my: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Header
-        </Typography>
-      </Box>
-    </Container>
+    <Box sx={{ flexGrow: 1 }}>
+      <AppBar position="static">
+        <Toolbar>
+          <IconButton
+            edge="start"
+            color="inherit"
+            aria-label="menu"
+            sx={{ mr: 2 }}
+          >
+            <Avatar alt={user.name} sx={{ width: 36, height: 36 }} />
+          </IconButton>
+
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            Home
+          </Typography>
+          <Tooltip title="logout">
+            <IconButton
+              color="inherit"
+              aria-label="logout"
+              onClick={authLogout}
+            >
+              <LogoutIcon />
+            </IconButton>
+          </Tooltip>
+        </Toolbar>
+      </AppBar>
+    </Box>
   );
 };
 
