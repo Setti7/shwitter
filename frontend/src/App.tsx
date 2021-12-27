@@ -2,10 +2,17 @@ import "@fontsource/signika";
 
 import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {
+  HOME_ROUTE,
+  NEW_SHWEET_ROUTE,
+  SIGN_IN_ROUTE,
+  SIGN_UP_ROUTE,
+} from "./config/routes";
 import { AuthProvider } from "./contexts/auth";
 import HomePage from "./pages/Home";
-import SignIn from "./pages/SignIn";
-import SignUp from "./pages/SignUp";
+import NewShweetPage from "./pages/NewShweet";
+import SignInPage from "./pages/SignIn";
+import SignUpPage from "./pages/SignUp";
 import { apiService } from "./services/api";
 
 function App() {
@@ -17,9 +24,10 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="sign-in" element={<SignIn />} />
-          <Route path="sign-up" element={<SignUp />} />
+          <Route path={HOME_ROUTE} element={<HomePage />} />
+          <Route path={SIGN_IN_ROUTE} element={<SignInPage />} />
+          <Route path={SIGN_UP_ROUTE} element={<SignUpPage />} />
+          <Route path={NEW_SHWEET_ROUTE} element={<NewShweetPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

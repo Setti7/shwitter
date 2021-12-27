@@ -48,10 +48,10 @@ export const AuthProvider: React.FC = ({ children }) => {
   };
 
   const authLogin = useCallback(
-    async (username: string, password: string): Promise<AuthError | undefined> => {
+    async (username: string, password: string): Promise<ApiError | AuthError | undefined> => {
       const sessResult = await login(username, password);
       
-      if (sessResult instanceof AuthError) {
+      if (sessResult instanceof ApiError) {
         return sessResult;
       }
 

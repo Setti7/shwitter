@@ -15,6 +15,7 @@ import { createUser } from "../services/auth";
 import ApiError from "../models/errors/ApiError";
 import theme from "../config/theme";
 import LoadingSwitcher from "../components/LoadingSwitcher";
+import { HOME_ROUTE } from "../config/routes";
 
 interface Values {
   name: string;
@@ -41,13 +42,13 @@ function Copyright(props: any) {
   );
 }
 
-export default function SignUp() {
+export default function SignUpPage() {
   const navigate = useNavigate();
   const { authStatus, authLogin } = React.useContext(AuthContext);
 
   React.useEffect(() => {
     if (authStatus === AuthStatus.Authenticated) {
-      navigate("/");
+      navigate(HOME_ROUTE);
     }
   }, [authStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -13,6 +13,7 @@ import theme from "../config/theme";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import LoadingSwitcher from "../components/LoadingSwitcher";
 import { Link } from "@mui/material";
+import { HOME_ROUTE, SIGN_UP_ROUTE } from "../config/routes";
 
 interface Values {
   username: string;
@@ -37,13 +38,13 @@ function Copyright(props: any) {
   );
 }
 
-export default function SignIn() {
+export default function SignInPage() {
   const navigate = useNavigate();
   const { authStatus, authLogin } = React.useContext(AuthContext);
 
   React.useEffect(() => {
     if (authStatus === AuthStatus.Authenticated) {
-      navigate("/");
+      navigate(HOME_ROUTE);
     }
   }, [authStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -147,7 +148,7 @@ export default function SignIn() {
               </RouterLink>
             </Grid>
             <Grid item>
-              <RouterLink to="/sign-up">
+              <RouterLink to={SIGN_UP_ROUTE}>
                 <Link variant="body2">Don't have an account? Sign Up</Link>
               </RouterLink>
             </Grid>

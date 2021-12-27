@@ -3,6 +3,8 @@ import { useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import { AuthContext, AuthStatus } from "../contexts/auth";
+import ShweetButton from "../components/ShweetButton";
+import { SIGN_IN_ROUTE } from "../config/routes";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -10,7 +12,7 @@ const HomePage = () => {
 
   useEffect(() => {
     if (authStatus === AuthStatus.NotAuthenticated) {
-      navigate("/sign-in");
+      navigate(SIGN_IN_ROUTE);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authStatus]);
@@ -28,7 +30,7 @@ const HomePage = () => {
             marginTop: 4,
             display: "flex",
             flexDirection: "column",
-            alignItems: "stretch",
+            alignItems: "start",
           }}
         >
           {/* TODO: 
@@ -37,6 +39,7 @@ const HomePage = () => {
           [ ] Add userline
           */}
 
+          <ShweetButton />
         </Box>
       </Container>
     </>

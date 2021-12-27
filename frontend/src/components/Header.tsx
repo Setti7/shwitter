@@ -7,6 +7,7 @@ import IconButton from "@mui/material/IconButton";
 import { AuthContext } from "../contexts/auth";
 import { Avatar, Tooltip } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
+import UserAvatar from "./UserAvatar";
 
 const Header = () => {
   const { user, authLogout } = React.useContext(AuthContext);
@@ -25,7 +26,7 @@ const Header = () => {
             aria-label="menu"
             sx={{ mr: 2 }}
           >
-            <Avatar alt={user.name} sx={{ width: 36, height: 36 }} />
+            <UserAvatar user={user} />
           </IconButton>
 
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
