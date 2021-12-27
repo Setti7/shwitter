@@ -20,7 +20,7 @@ import { useFormik } from "formik";
 import theme from "../config/theme";
 import LoadingSwitcher from "../components/LoadingSwitcher";
 import CloseIcon from "@mui/icons-material/Close";
-import { createShweet } from "../services/shweet";
+import { createShweet } from "../services/shweets";
 import ApiError from "../models/errors/ApiError";
 
 interface Values {

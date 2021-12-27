@@ -18,6 +18,9 @@ const theme = createTheme({
   },
   typography: {
     fontFamily: '"Signika", "Helvetica", "Arial", sans-serif',
+    caption: {
+      color: "#6E767D",
+    },
   },
 });
 
