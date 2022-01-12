@@ -29,7 +29,6 @@ const HomePage = () => {
         // TODO show error
       } else {
         setTimeline(tl);
-        console.log(tl);
       }
     };
 

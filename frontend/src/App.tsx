@@ -14,10 +14,15 @@ import NewShweetPage from "./pages/NewShweet";
 import SignInPage from "./pages/SignIn";
 import SignUpPage from "./pages/SignUp";
 import { apiService } from "./services/api";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+import relativeTime from "dayjs/plugin/relativeTime";
 
 function App() {
   useEffect(() => {
     apiService.initialize();
+    dayjs.extend(duration);
+    dayjs.extend(relativeTime);
   }, []);
 
   return (

@@ -48,7 +48,6 @@ const NewShweetPage = () => {
     onSubmit: async (values, { setSubmitting, setErrors, setStatus }) => {
       setStatus(undefined);
 
-      await new Promise((r) => setTimeout(r, 1000));
       const result = await createShweet(values);
       if (result instanceof ApiError) {
         setErrors(result.getError());
