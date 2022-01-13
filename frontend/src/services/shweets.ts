@@ -32,3 +32,14 @@ export const getTimeline = async (): Promise<Timeline | ApiError> => {
     return handleApiError(error) ?? genericApiError;
   }
 };
+
+export const getUserline = async (id: string): Promise<Timeline | ApiError> => {
+  const api = await apiService.getExecutor();
+
+  try {
+    const response = await api.get("userline/" + id);
+    return response.data["data"];
+  } catch (error) {
+    return handleApiError(error) ?? genericApiError;
+  }
+};
