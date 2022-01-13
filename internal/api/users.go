@@ -57,6 +57,22 @@ func FollowUser(c *gin.Context) {
 	}
 }
 
+func IsFollowingUser(c *gin.Context) {
+	user, ok := middleware.GetUserOrAbort(c)
+	if !ok {
+		return
+	}
+
+	followUserID := c.Param("id")
+	isFollowing, err := query.IsUserFollowing(user.ID, followUserID)
+
+	if err == query.ErrInvalidID {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID."})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"data": isFollowing})
+	}
+}
+
 func UnFollowUser(c *gin.Context) {
 	user, ok := middleware.GetUserOrAbort(c)
 	if !ok {

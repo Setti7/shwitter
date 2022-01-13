@@ -199,6 +199,24 @@ func ListFriends(userID string, p *form.Paginator) ([]*entity.FriendOrFollower, 
 	return listFriendsOrFollowers(userID, true, p)
 }
 
+// Check if a user is following another one
+//
+// Returns ErrInvalidID if any of the IDs are empty.
+func IsUserFollowing(userID string, following string) (bool, error) {
+	if userID == "" || following == "" {
+		return false, ErrInvalidID
+	}
+
+	q := "SELECT follower_id FROM followers WHERE user_id = ? AND follower_id = ?"
+	iterable := service.Cassandra().Query(q, following, userID).Iter()
+
+	if iterable.NumRows() > 0 {
+		return true, nil
+	} else {
+		return false, nil
+	}
+}
+
 // Make a user follow another user. Make sure userID is a valid user.
 //
 // Returns ErrNotFound if otherUserID was not found and ErrUnexpected on any other errors.
