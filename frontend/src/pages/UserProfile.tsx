@@ -1,17 +1,30 @@
-import { Container, Box, Divider, Typography } from "@mui/material";
+import {
+  Container,
+  Box,
+  Divider,
+  Typography,
+  AppBar,
+  Toolbar,
+  IconButton,
+} from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import Header from "../components/Header";
 import { getUserline } from "../services/shweets";
 import { Timeline } from "../models/shweet";
 import ApiError from "../models/errors/ApiError";
 import ShweetCard from "../components/ShweetCard";
 import { HOME_ROUTE } from "../config/routes";
+import UserDetails from "../components/UserDetails";
+import { getUser } from "../services/user";
+import User from "../models/user";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import UserBackground from "../components/UserBackground";
 
 const UserProfile = () => {
   const navigate = useNavigate();
   const [error, setError] = useState<String | undefined>();
   const [userline, setUserline] = useState<Timeline>([]);
+  const [user, setUser] = useState<User | undefined>();
 
   const { userId } = useParams();
 
@@ -22,27 +35,66 @@ const UserProfile = () => {
         return;
       }
 
-      const result = await getUserline(userId);
-      if (result instanceof ApiError) {
-        setError(result.getFormattedStatus());
+      const [userResult, lineResult] = await Promise.all([
+        getUser(userId),
+        getUserline(userId),
+      ]);
+
+      if (userResult instanceof ApiError) {
+        setError(userResult.getFormattedStatus());
       } else {
-        setUserline(result);
+        setUser(userResult);
+      }
+
+      if (lineResult instanceof ApiError) {
+        setError(lineResult.getFormattedStatus());
+      } else {
+        setUserline(lineResult);
       }
     };
 
     getData();
   }, [userId]);
 
-  if (userId === undefined) {
+  if (userId === undefined || user === undefined) {
+    // TODO loading
     return <></>;
   }
-  // TODO:
-  // [ ] Add user details/bio and follower/following count
-  // [ ] Add follow/unfollow button
 
   return (
     <>
-      <Header />
+      <Box sx={{ flexGrow: 1 }}>
+        <AppBar position="static">
+          <Toolbar>
+            <IconButton
+              edge="start"
+              color="inherit"
+              aria-label="go back"
+              sx={{ mr: 2 }}
+              onClick={() => navigate(HOME_ROUTE)}
+            >
+              <ArrowBackIcon />
+            </IconButton>
+
+            <Box display="flex" alignItems="end">
+              <Box flexGrow={1}>
+                <Typography>{user.name}</Typography>
+              </Box>
+              {/* TODO: get amount of shweets */}
+              <Typography ml={2} variant="caption">
+                XXX shweets
+              </Typography>
+            </Box>
+          </Toolbar>
+        </AppBar>
+      </Box>
+
+      <UserBackground user={user} />
+      <Container>
+        <UserDetails user={user} />
+        <Box mb={3} />
+      </Container>
+
       <Container component="main">
         <Box
           sx={{

@@ -42,7 +42,7 @@ const ShweetCard: FC<Props> = ({ shweet }) => {
             [ ] Add share button
             [ ] Maybe add responses
             [ ] Add click to go to details
-            [ ] Add click to go to profile
+            [X] Add click to go to profile
             */}
           </Box>
 
