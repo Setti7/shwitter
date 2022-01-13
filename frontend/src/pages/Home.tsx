@@ -1,4 +1,4 @@
-import { Container, Box, Divider } from "@mui/material";
+import { Container, Box, Divider, Typography } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
@@ -12,6 +12,7 @@ import ShweetCard from "../components/ShweetCard";
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const [error, setError] = useState<String | undefined>();
   const [timeline, setTimeline] = useState<Timeline>([]);
   const { user, authStatus } = useContext(AuthContext);
 
@@ -24,11 +25,11 @@ const HomePage = () => {
 
   useEffect(() => {
     const getData = async () => {
-      const tl = await getTimeline();
-      if (tl instanceof ApiError) {
-        // TODO show error
+      const result = await getTimeline();
+      if (result instanceof ApiError) {
+        setError(result.getFormattedStatus());
       } else {
-        setTimeline(tl);
+        setTimeline(result);
       }
     };
 
@@ -52,15 +53,21 @@ const HomePage = () => {
           }}
         >
           {/* TODO: 
-          [ ] Fix timeline (we need to invert the order of shweets)
+          [X] Fix timeline (we need to invert the order of shweets)
           [ ] Add userline and profile view
           */}
+
+          {error !== undefined ? (
+            <Typography textAlign="center">{error}</Typography>
+          ) : (
+            <></>
+          )}
 
           {timeline.map((s) => {
             return (
               <Box mb={1}>
                 <ShweetCard shweet={s} />
-                <Divider sx={{marginTop: 2}} />
+                <Divider sx={{ marginTop: 2 }} />
               </Box>
             );
           })}
