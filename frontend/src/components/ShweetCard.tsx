@@ -15,28 +15,27 @@ const ShweetCard: FC<Props> = ({ shweet }) => {
     .humanize();
 
   return (
-    <Container maxWidth="xs">
-      <Box display="flex" flexDirection="row">
-        <Box mr={2}>
-          <UserAvatar user={shweet.user} />
-        </Box>
-        <Box
-          display="flex"
-          flexDirection="column"
-          alignItems="stretch"
-          flexGrow={1}
-        >
-          <Box display="flex">
-            <Box display="flex" flexGrow={1} alignItems="baseline">
-              <Typography>{shweet.user.name}</Typography>
-              <Typography sx={{ marginLeft: 1 }} variant="caption">
-                @{shweet.user.username}
-              </Typography>
-            </Box>
-            <Typography variant="caption" justifySelf="end">
-              {createdAtHumanized}
+    <Box display="flex" flexDirection="row">
+      <Box mr={2}>
+        <UserAvatar user={shweet.user} />
+      </Box>
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="stretch"
+        flexGrow={1}
+      >
+        <Box display="flex">
+          <Box display="flex" flexGrow={1} alignItems="baseline">
+            <Typography>{shweet.user.name}</Typography>
+            <Typography sx={{ marginLeft: 1 }} variant="caption">
+              @{shweet.user.username}
             </Typography>
-            {/* TODO: 
+          </Box>
+          <Typography variant="caption" justifySelf="end">
+            {createdAtHumanized}
+          </Typography>
+          {/* TODO: 
             [ ] Add likes
             [ ] Add reshweet
             [ ] Add share button
@@ -44,12 +43,11 @@ const ShweetCard: FC<Props> = ({ shweet }) => {
             [ ] Add click to go to details
             [X] Add click to go to profile
             */}
-          </Box>
-
-          <Typography variant="body2">{shweet.message}</Typography>
         </Box>
+
+        <Typography variant="body2">{shweet.message}</Typography>
       </Box>
-    </Container>
+    </Box>
   );
 };
 

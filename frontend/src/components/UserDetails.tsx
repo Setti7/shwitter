@@ -5,7 +5,7 @@ import User from "../models/user";
 const UserDetails: FC<{ user: User }> = ({ user }) => {
   return (
     <>
-      <Box display="flex" flexDirection="column" justifyContent="start">
+      <Box display="flex" flexDirection="column" justifyContent="start" m={2}>
         <Typography>{user.name}</Typography>
         <Box display="flex" alignItems="baseline">
           <Typography sx={{ flexGrow: 1 }} variant="caption">

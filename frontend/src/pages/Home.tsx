@@ -43,7 +43,7 @@ const HomePage = () => {
   return (
     <>
       <Header />
-      <Container component="main">
+      <Container component="main" maxWidth="sm">
         <Box
           sx={{
             marginTop: 2,

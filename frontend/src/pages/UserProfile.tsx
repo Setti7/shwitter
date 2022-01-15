@@ -89,13 +89,13 @@ const UserProfile = () => {
         </AppBar>
       </Box>
 
-      <UserBackground user={user} />
-      <Container>
-        <UserDetails user={user} />
-        <Box mb={3} />
+      <Container maxWidth="sm" sx={{ padding: "0" }}>
+          <UserBackground user={user} />
+          <UserDetails user={user} />
+          <Box mb={3} />
       </Container>
 
-      <Container component="main">
+      <Container component="main" maxWidth="sm">
         <Box
           sx={{
             marginTop: 2,
