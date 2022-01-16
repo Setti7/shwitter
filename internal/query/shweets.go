@@ -84,7 +84,7 @@ func GetShweetDetailsByID(userID string, shweetID string) (d entity.ShweetDetail
 		Shweet:        shweet,
 		LikeCount:     likeCount,
 		ReshweetCount: reshweetCount,
-		CommentsCount: commentCount,
+		CommentCount: commentCount,
 		Liked:         isLiked,
 		ReShweeted:    false,
 	}

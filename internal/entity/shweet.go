@@ -14,7 +14,7 @@ type ShweetDetails struct {
 	Shweet
 	LikeCount     int  `json:"like_count"`
 	ReshweetCount int  `json:"reshweet_count"`
-	CommentsCount int  `json:"comments_count"`
+	CommentCount  int  `json:"comment_count"`
 	Liked         bool `json:"liked"`
 	ReShweeted    bool `json:"reshweeted"`
 }

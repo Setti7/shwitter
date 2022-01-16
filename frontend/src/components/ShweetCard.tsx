@@ -42,11 +42,12 @@ const ShweetCard: FC<Props> = ({ shweet }) => {
               {createdAtHumanized}
             </Typography>
             {/* TODO: 
-            [ ] Add likes
+            [X] Add likes
             [ ] Add reshweet
-            [ ] Add share button
+            [X] Add share button
             [ ] Maybe add responses
-            [ ] Add click to go to details
+            [ ] List users who liked/reshweeted
+            [X] Add click to go to details
             [X] Add click to go to profile
             */}
           </Box>
