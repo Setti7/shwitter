@@ -16,4 +16,5 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/urfave/cli/v2 v2.3.0
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+	golang.org/x/text v0.3.7
 )

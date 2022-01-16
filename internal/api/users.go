@@ -39,6 +39,21 @@ func GetUser(c *gin.Context) {
 	}
 }
 
+// Get a user profile by its id
+func GetUserProfile(c *gin.Context) {
+	id := c.Param("id")
+	profile, err := query.GetUserProfileByID(id)
+
+	if err == query.ErrNotFound || err == query.ErrInvalidID {
+		util.AbortResponseNotFound(c)
+	} else if err != nil {
+		util.AbortResponseUnexpectedError(c)
+	} else {
+		c.JSON(http.StatusOK, gin.H{"data": profile})
+	}
+}
+
+
 func FollowUser(c *gin.Context) {
 	user, ok := middleware.GetUserOrAbort(c)
 	if !ok {

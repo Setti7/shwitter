@@ -18,7 +18,7 @@ import { apiService } from "./services/api";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import relativeTime from "dayjs/plugin/relativeTime";
-import UserProfile from "./pages/UserProfile";
+import UserProfilePage from "./pages/UserProfile";
 
 function App() {
   useEffect(() => {
@@ -35,7 +35,7 @@ function App() {
           <Route path={SIGN_IN_ROUTE} element={<SignInPage />} />
           <Route path={SIGN_UP_ROUTE} element={<SignUpPage />} />
           <Route path={NEW_SHWEET_ROUTE} element={<NewShweetPage />} />
-          <Route path={USER_ROUTE} element={<UserProfile />} />
+          <Route path={USER_ROUTE} element={<UserProfilePage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

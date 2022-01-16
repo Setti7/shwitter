@@ -47,6 +47,7 @@ func startAction(ctx *cli.Context) error {
 	// TODO: add tests, interface and channels
 	r.GET("/users", api.ListUsers)
 	r.GET("/users/:id", api.GetUser)
+	r.GET("/users/:id/profile", api.GetUserProfile)
 	r.POST("/users", api.CreateUser)
 	r.GET("/users/me", api.GetCurrentUser)
 

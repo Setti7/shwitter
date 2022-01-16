@@ -15,16 +15,16 @@ import ApiError from "../models/errors/ApiError";
 import ShweetCard from "../components/ShweetCard";
 import { HOME_ROUTE } from "../config/routes";
 import UserDetails from "../components/UserDetails";
-import { getUser } from "../services/user";
-import User from "../models/user";
+import { getUserProfile } from "../services/user";
+import { UserProfile } from "../models/user";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import UserBackground from "../components/UserBackground";
 
-const UserProfile = () => {
+const UserProfilePage = () => {
   const navigate = useNavigate();
   const [error, setError] = useState<String | undefined>();
   const [userline, setUserline] = useState<Timeline>([]);
-  const [user, setUser] = useState<User | undefined>();
+  const [profile, setProfile] = useState<UserProfile | undefined>();
 
   const { userId } = useParams();
 
@@ -36,14 +36,14 @@ const UserProfile = () => {
       }
 
       const [userResult, lineResult] = await Promise.all([
-        getUser(userId),
+        getUserProfile(userId),
         getUserline(userId),
       ]);
 
       if (userResult instanceof ApiError) {
         setError(userResult.getFormattedStatus());
       } else {
-        setUser(userResult);
+        setProfile(userResult);
       }
 
       if (lineResult instanceof ApiError) {
@@ -56,7 +56,7 @@ const UserProfile = () => {
     getData();
   }, [userId]);
 
-  if (userId === undefined || user === undefined) {
+  if (userId === undefined || profile === undefined) {
     // TODO loading
     return <></>;
   }
@@ -78,11 +78,10 @@ const UserProfile = () => {
 
             <Box display="flex" alignItems="end">
               <Box flexGrow={1}>
-                <Typography>{user.name}</Typography>
+                <Typography>{profile.name}</Typography>
               </Box>
-              {/* TODO: get amount of shweets */}
               <Typography ml={2} variant="caption">
-                XXX shweets
+                {profile.shweets_count} shweets
               </Typography>
             </Box>
           </Toolbar>
@@ -90,8 +89,8 @@ const UserProfile = () => {
       </Box>
 
       <Container maxWidth="sm" sx={{ padding: "0" }}>
-          <UserBackground user={user} />
-          <UserDetails user={user} />
+          <UserBackground userProfile={profile} />
+          <UserDetails userProfile={profile} />
           <Box mb={3} />
       </Container>
 
@@ -124,4 +123,4 @@ const UserProfile = () => {
   );
 };
 
-export default UserProfile;
+export default UserProfilePage;

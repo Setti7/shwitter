@@ -95,7 +95,13 @@ func CreateShweet(userID string, f form.CreateShweetForm) (string, error) {
 		return "", err
 	}
 
-	return uuid.String(), err
+	// Increment the user shweets counter
+	err = IncrementUserMetadataCounter(userID, entity.ShweetsCount, 1)
+	if err != nil {
+		return "", err
+	}
+
+	return uuid.String(), nil
 }
 
 // Enrich the user info of a slice of shweets

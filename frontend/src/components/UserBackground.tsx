@@ -2,7 +2,7 @@ import { Avatar, Box, Fab, IconButton, Snackbar } from "@mui/material";
 import { FC, useCallback, useContext, useEffect, useState } from "react";
 import { AuthContext } from "../contexts/auth";
 import ApiError from "../models/errors/ApiError";
-import User from "../models/user";
+import { UserProfile } from "../models/user";
 import { followUser, getIsFollowing, unFollowUser } from "../services/user";
 import ShareIcon from "@mui/icons-material/Share";
 import CloseIcon from "@mui/icons-material/Close";
@@ -16,7 +16,7 @@ const fabBlackStyle = {
   },
 };
 
-const UserBackground: FC<{ user: User }> = ({ user }) => {
+const UserBackground: FC<{ userProfile: UserProfile }> = ({ userProfile: user }) => {
   const { user: currentUser } = useContext(AuthContext);
   const [isFollowing, setIsFollowing] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
