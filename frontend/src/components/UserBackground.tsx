@@ -16,7 +16,7 @@ const fabBlackStyle = {
   },
 };
 
-const UserBackground: FC<{ userProfile: UserProfile }> = ({ userProfile: user }) => {
+const UserBackground: FC<{ userProfile: UserProfile }> = ({ userProfile }) => {
   const { user: currentUser } = useContext(AuthContext);
   const [isFollowing, setIsFollowing] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -34,24 +34,24 @@ const UserBackground: FC<{ userProfile: UserProfile }> = ({ userProfile: user })
 
   useEffect(() => {
     const getData = async () => {
-      const result = await getIsFollowing(user.id);
+      const result = await getIsFollowing(userProfile.id);
       if (!(result instanceof ApiError)) {
         setIsFollowing(result);
       }
     };
 
     getData();
-  }, [user]);
+  }, [userProfile]);
 
   const action = useCallback(async () => {
     if (isFollowing) {
-      await unFollowUser(user.id);
+      await unFollowUser(userProfile.id);
       setIsFollowing(false);
     } else {
-      followUser(user.id);
+      followUser(userProfile.id);
       setIsFollowing(true);
     }
-  }, [user, isFollowing]);
+  }, [userProfile, isFollowing]);
 
   const copyToClipboard = useCallback(async () => {
     const url = window.location.origin + window.location.pathname;
@@ -83,7 +83,7 @@ const UserBackground: FC<{ userProfile: UserProfile }> = ({ userProfile: user })
         >
           {/* TODO: use user profile picture */}
           <Avatar
-            alt={user.name}
+            alt={userProfile.name}
             sx={{
               width: 76,
               height: 76,
@@ -105,7 +105,7 @@ const UserBackground: FC<{ userProfile: UserProfile }> = ({ userProfile: user })
             </Fab>
 
             <Box mr={1} />
-            {currentUser?.id !== user.id ? (
+            {currentUser?.id !== userProfile.id ? (
               <Fab
                 size="small"
                 variant="extended"

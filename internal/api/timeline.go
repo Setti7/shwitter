@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// TODO: paginate
 func GetTimelineForCurrentUser(c *gin.Context) {
 	user, ok := middleware.GetUserOrAbort(c)
 	if !ok {
@@ -25,6 +26,7 @@ func GetTimelineForCurrentUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": shweets})
 }
 
+// TODO: paginate
 func GetUserLine(c *gin.Context) {
 	userID := c.Param("id")
 
