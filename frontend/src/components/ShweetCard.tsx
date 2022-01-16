@@ -1,4 +1,4 @@
-import { Box, Typography, Container } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { FC } from "react";
 import Shweet from "../models/shweet";
 import UserAvatar from "./UserAvatar";

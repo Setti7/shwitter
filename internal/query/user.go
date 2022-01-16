@@ -21,7 +21,7 @@ func GetUserByID(id string) (user entity.User, err error) {
 		return user, ErrInvalidID
 	}
 
-	query := "SELECT id, username, email, name, bio FROM users WHERE id=? LIMIT 1"
+	query := "SELECT id, username, email, name, bio, joined_at FROM users WHERE id=? LIMIT 1"
 	m := map[string]interface{}{}
 	err = service.Cassandra().Query(query, id).MapScan(m)
 
@@ -37,6 +37,7 @@ func GetUserByID(id string) (user entity.User, err error) {
 	user.Email = m["email"].(string)
 	user.Name = m["name"].(string)
 	user.Bio = m["bio"].(string)
+	user.JoinedAt = m["joined_at"].(time.Time)
 
 	return user, nil
 }
@@ -48,29 +49,29 @@ func GetUserByID(id string) (user entity.User, err error) {
 func GetUserProfileByID(id string) (p entity.UserProfile, err error) {
 	user, err := GetUserByID(id)
 	if err != nil {
-		return p, err;
+		return p, err
 	}
 
-	followersCount, err := GetUserMetadataCounter(id, entity.FollowersCount);
+	followersCount, err := GetUserMetadataCounter(id, entity.FollowersCount)
 	if err != nil {
-		return p, err;
+		return p, err
 	}
 
-	friendsCount, err := GetUserMetadataCounter(id, entity.FriendsCount);
+	friendsCount, err := GetUserMetadataCounter(id, entity.FriendsCount)
 	if err != nil {
-		return p, err;
+		return p, err
 	}
 
-	shweetsCount, err := GetUserMetadataCounter(id, entity.ShweetsCount);
+	shweetsCount, err := GetUserMetadataCounter(id, entity.ShweetsCount)
 	if err != nil {
-		return p, err;
+		return p, err
 	}
 
 	p = entity.UserProfile{
 		FollowersCount: followersCount,
-		FriendsCount: friendsCount,
-		ShweetsCount: shweetsCount,
-		User: user,
+		FriendsCount:   friendsCount,
+		ShweetsCount:   shweetsCount,
+		User:           user,
 	}
 
 	return p, err
@@ -109,7 +110,7 @@ func EnrichUsers(ids []string) (map[string]*entity.User, error) {
 //
 // Returns ErrUnexpected on any errors.
 func CreateNewUserWithCredentials(f form.CreateUserForm) (user entity.User, err error) {
-	uuid := gocql.TimeUUID()
+	uuid, _ := gocql.RandomUUID()
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(f.Password), 10)
 	if err != nil {

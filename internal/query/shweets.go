@@ -51,7 +51,7 @@ func CreateShweet(userID string, f form.CreateShweetForm) (string, error) {
 		return "", ErrInvalidID
 	}
 
-	uuid := gocql.TimeUUID()
+	uuid, _ := gocql.RandomUUID()
 
 	// TODO - Insert into:
 	// 	[X] Shweets table

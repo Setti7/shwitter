@@ -1,0 +1,1 @@
+ALTER TABLE users DROP joined_at;

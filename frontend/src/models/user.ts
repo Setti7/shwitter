@@ -4,14 +4,10 @@ export default interface User {
   name: string;
   email: string;
   bio: string;
+  joined_at: Date;
 }
 
-export interface UserProfile {
-  id: string;
-  username: string;
-  name: string;
-  email: string;
-  bio: string;
+export interface UserProfile extends User {
   followers_count: number;
   friends_count: number;
   shweets_count: number;
