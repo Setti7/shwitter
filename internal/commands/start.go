@@ -1,6 +1,10 @@
 package commands
 
 import (
+	"log"
+	"net/http"
+	"time"
+
 	"github.com/Setti7/shwitter/internal/api"
 	"github.com/Setti7/shwitter/internal/config"
 	"github.com/Setti7/shwitter/internal/middleware"
@@ -8,9 +12,6 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/urfave/cli/v2"
-	"log"
-	"net/http"
-	"time"
 )
 
 var StartCommand = cli.Command{
@@ -43,6 +44,7 @@ func startAction(ctx *cli.Context) error {
 	r.POST("/shweets", api.CreateShweet)
 	r.GET("/shweets", api.ListShweets)
 	r.GET("/shweets/:id", api.GetShweet)
+	r.POST("/shweets/:id/like", api.LikeOrUnlikeShweet)
 
 	// TODO: add tests, interface and channels
 	r.GET("/users", api.ListUsers)

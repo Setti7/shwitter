@@ -1,12 +1,13 @@
 package query
 
 import (
+	"time"
+
 	"github.com/Setti7/shwitter/internal/entity"
 	"github.com/Setti7/shwitter/internal/form"
 	"github.com/Setti7/shwitter/internal/log"
 	"github.com/Setti7/shwitter/internal/service"
 	"github.com/gocql/gocql"
-	"time"
 )
 
 // Get a shweet by its ID. The shweet is enriched.
@@ -42,6 +43,53 @@ func GetShweetByID(id string) (shweet entity.Shweet, err error) {
 	}
 
 	return shweet, nil
+}
+
+// Get details of a shweet. userID can be empty.
+//
+// Returns ErrInvalidID if the ID is empty, ErrNotFound if the shweet was not found and ErrUnexpected
+// for any other errors.
+func GetShweetDetailsByID(userID string, shweetID string) (d entity.ShweetDetails, err error) {
+	shweet, err := GetShweetByID(shweetID)
+	if err != nil {
+		return d, err
+	}
+
+	likeCount, err := GetCounterValue(shweetID, entity.ShweetLikesCount)
+	if err != nil {
+		return d, err
+	}
+
+	isLiked := false
+	if userID != "" {
+		isLiked, err = IsShweetLiked(userID, shweetID)
+		if err != nil {
+			return d, err
+		}
+
+		// TODO: add isReshweeted
+	}
+
+	reshweetCount, err := GetCounterValue(shweetID, entity.ShweetReshweetsCount)
+	if err != nil {
+		return d, err
+	}
+
+	commentCount, err := GetCounterValue(shweetID, entity.ShweetCommentsCount)
+	if err != nil {
+		return d, err
+	}
+
+	d = entity.ShweetDetails{
+		Shweet:        shweet,
+		LikeCount:     likeCount,
+		ReshweetCount: reshweetCount,
+		CommentsCount: commentCount,
+		Liked:         isLiked,
+		ReShweeted:    false,
+	}
+
+	return d, err
 }
 
 // Create a shweet
@@ -97,7 +145,7 @@ func CreateShweet(userID string, f form.CreateShweetForm) (string, error) {
 	}
 
 	// Increment the user shweets counter
-	err = IncrementUserMetadataCounter(userID, entity.ShweetsCount, 1)
+	err = IncrementCounterValue(userID, entity.ShweetsCount, 1)
 	if err != nil {
 		return "", err
 	}
@@ -158,4 +206,89 @@ func ListShweets() ([]*entity.Shweet, error) {
 	}
 
 	return shweets, nil
+}
+
+// Like or Unlike a shweet for the given user.
+//
+// Returns ErrInvalidID for invalid IDs, ErrNotFound if the shweet does not exist or ErrUnexpected
+// for any other errors.
+func LikeOrUnlikeShweet(userID string, shweetID string) error {
+	if userID == "" || shweetID == "" {
+		return ErrInvalidID
+	}
+
+	_, err := GetShweetByID(shweetID)
+	if err != nil {
+		return ErrNotFound
+	}
+
+	isLiked, err := IsShweetLiked(userID, shweetID)
+	if err != nil {
+		return ErrNotFound
+	}
+
+	// Add/remove this shweet to the list of shweets liked by this user
+	if !isLiked {
+		err = service.Cassandra().Query(
+			"INSERT INTO user_liked_shweets (user_id, shweet_id) VALUES (?, ?)",
+			userID, shweetID).Exec()
+	} else {
+		err = service.Cassandra().Query(
+			"DELETE FROM user_liked_shweets WHERE user_id = ? AND shweet_id = ?",
+			userID, shweetID).Exec()
+	}
+	if err != nil {
+		log.LogError("query.likeOrDislikeShweet",
+			"Could not add/remove shweet to list of user liked shweets", err)
+		return ErrUnexpected
+	}
+
+	// Add/remove this user to the list of users that liked this shweet
+	if !isLiked {
+		err = service.Cassandra().Query(
+			"INSERT INTO shweet_liked_by_users (shweet_id, user_id) VALUES (?, ?)",
+			shweetID, userID).Exec()
+	} else {
+		err = service.Cassandra().Query(
+			"DELETE FROM shweet_liked_by_users WHERE shweet_id = ? AND user_id = ?",
+			shweetID, userID).Exec()
+	}
+	if err != nil {
+		log.LogError("query.likeOrDislikeShweet",
+			"Could not add/remove user to list of users that liked shweet", err)
+		return ErrUnexpected
+	}
+
+	// Increment/decrement the liked counter
+	var inc int
+	if isLiked {
+		inc = -1
+	} else {
+		inc = 1
+	}
+
+	err = IncrementCounterValue(shweetID, entity.ShweetLikesCount, inc)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Check if a user liked a given shweet.
+//
+// Returns ErrInvalidID if any of the IDs are empty.
+func IsShweetLiked(userID string, shweetID string) (bool, error) {
+	if userID == "" || shweetID == "" {
+		return false, ErrInvalidID
+	}
+
+	q := "SELECT user_id FROM user_liked_shweets WHERE user_id = ? AND shweet_id = ?"
+	iterable := service.Cassandra().Query(q, userID, shweetID).Iter()
+
+	if iterable.NumRows() > 0 {
+		return true, nil
+	} else {
+		return false, nil
+	}
 }

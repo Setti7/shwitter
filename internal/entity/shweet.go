@@ -8,5 +8,13 @@ type Shweet struct {
 	Message   string    `json:"message"`
 	User      *User     `json:"user,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
-	// TODO add like count (use a cassandra Counter into the shweets table, and enrich that data with a new query, async)
+}
+
+type ShweetDetails struct {
+	Shweet
+	LikeCount     int  `json:"like_count"`
+	ReshweetCount int  `json:"reshweet_count"`
+	CommentsCount int  `json:"comments_count"`
+	Liked         bool `json:"liked"`
+	ReShweeted    bool `json:"reshweeted"`
 }

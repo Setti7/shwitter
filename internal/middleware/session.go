@@ -52,15 +52,23 @@ func SessionMiddleware() gin.HandlerFunc {
 	}
 }
 
-func GetUserOrAbort(c *gin.Context) (entity.User, bool) {
+
+func GetUser(c *gin.Context) (entity.User, bool) {
 	user, ok := c.Get(USER_KEY)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "You need to authenticate first."})
-	}
 
 	if user == nil {
 		return entity.User{}, false
 	} else {
 		return user.(entity.User), ok
 	}
+}
+
+func GetUserOrAbort(c *gin.Context) (entity.User, bool) {
+	user, ok := GetUser(c)
+
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "You need to authenticate first."})
+	}
+	
+	return user, ok
 }

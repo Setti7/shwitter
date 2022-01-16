@@ -1,7 +1,6 @@
 package query
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/Setti7/shwitter/internal/entity"
@@ -52,17 +51,17 @@ func GetUserProfileByID(id string) (p entity.UserProfile, err error) {
 		return p, err
 	}
 
-	followersCount, err := GetUserMetadataCounter(id, entity.FollowersCount)
+	followersCount, err := GetCounterValue(id, entity.FollowersCount)
 	if err != nil {
 		return p, err
 	}
 
-	friendsCount, err := GetUserMetadataCounter(id, entity.FriendsCount)
+	friendsCount, err := GetCounterValue(id, entity.FriendsCount)
 	if err != nil {
 		return p, err
 	}
 
-	shweetsCount, err := GetUserMetadataCounter(id, entity.ShweetsCount)
+	shweetsCount, err := GetCounterValue(id, entity.ShweetsCount)
 	if err != nil {
 		return p, err
 	}
@@ -286,11 +285,11 @@ func FollowUser(userID string, otherUserID string) error {
 	}
 
 	// Increment the user friends counter and the otherUser followers counter
-	err = IncrementUserMetadataCounter(otherUserID, entity.FollowersCount, 1)
+	err = IncrementCounterValue(otherUserID, entity.FollowersCount, 1)
 	if err != nil {
 		return err
 	}
-	err = IncrementUserMetadataCounter(userID, entity.FriendsCount, 1)
+	err = IncrementCounterValue(userID, entity.FriendsCount, 1)
 	if err != nil {
 		return err
 	}
@@ -321,11 +320,11 @@ func UnFollowUser(userID string, otherUserID string) error {
 	}
 
 	// Decrement the user friends counter and the otherUser followers counter
-	err = IncrementUserMetadataCounter(otherUserID, entity.FollowersCount, -1)
+	err = IncrementCounterValue(otherUserID, entity.FollowersCount, -1)
 	if err != nil {
 		return err
 	}
-	err = IncrementUserMetadataCounter(userID, entity.FriendsCount, -1)
+	err = IncrementCounterValue(userID, entity.FriendsCount, -1)
 	if err != nil {
 		return err
 	}
@@ -360,47 +359,4 @@ func ListUsers() (users []*entity.User, err error) {
 	}
 
 	return users, nil
-}
-
-// Increment a user metadata counter.
-//
-// Returns ErrInvalidID for invalid user IDs and ErrUnexpected for any other errors.
-func IncrementUserMetadataCounter(userID string, c entity.ProfileCounter, value int) error {
-	if userID == "" {
-		return ErrInvalidID
-	}
-
-	q := fmt.Sprintf("UPDATE %s SET count = count + ? WHERE user_id = ?", c)
-	err := service.Cassandra().Query(q, value, userID).Exec()
-
-	if err != nil {
-		log.LogError("query.IncrementUserMetadataCounter", "Could not increment the counter for the given user", err)
-		return ErrUnexpected
-	} else {
-		return nil
-	}
-}
-
-// Get a user metadata counter.
-//
-// Returns ErrInvalidID for invalid user IDs and ErrUnexpected for any other errors.
-func GetUserMetadataCounter(userID string, c entity.ProfileCounter) (count int, err error) {
-	if userID == "" {
-		return 0, ErrInvalidID
-	}
-
-	q := fmt.Sprintf("SELECT count FROM %s WHERE user_id = ?", c)
-	err = service.Cassandra().Query(q, userID).Scan(&count)
-
-	// If the user doesn't have a row in this table, it's because its counter is 0.
-	if err == gocql.ErrNotFound {
-		return 0, nil
-	}
-
-	if err != nil {
-		log.LogError("query.GetUserMetadataCounter", "Could not get the counter for the given user", err)
-		return 0, ErrUnexpected
-	} else {
-		return count, nil
-	}
 }

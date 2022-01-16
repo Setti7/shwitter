@@ -26,12 +26,15 @@ type FriendOrFollower struct {
 
 // The string value for the enum MUST be the same as the cassandra table for
 // the counter.
-// The counter table MUST have its ID column called "user_id" and its counter
+// The counter table MUST have its ID column called "id" and its counter
 // column called "count".
-type ProfileCounter string
+type CounterTable string
 
 const (
-	FollowersCount ProfileCounter = "user_followers_count"
-	FriendsCount   ProfileCounter = "user_friends_count"
-	ShweetsCount   ProfileCounter = "user_shweets_count"
+	FollowersCount       CounterTable = "user_followers_count"
+	FriendsCount         CounterTable = "user_friends_count"
+	ShweetsCount         CounterTable = "user_shweets_count"
+	ShweetLikesCount     CounterTable = "shweet_likes_count"
+	ShweetReshweetsCount CounterTable = "shweet_reshweets_count"
+	ShweetCommentsCount  CounterTable = "shweet_comments_count"
 )

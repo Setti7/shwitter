@@ -10,23 +10,24 @@ import {
   Snackbar,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import Shweet from "../models/shweet";
+import { ShweetDetails } from "../models/shweet";
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { HOME_ROUTE } from "../config/routes";
-import { getShweetDetails } from "../services/shweets";
+import { getShweetDetails, likeShweet } from "../services/shweets";
 import ApiError from "../models/errors/ApiError";
 import dayjs from "dayjs";
 import UserAvatar from "../components/UserAvatar";
 import ShareIcon from "@mui/icons-material/Share";
 import CachedIcon from "@mui/icons-material/Cached";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import FavoriteIcon from "@mui/icons-material/Favorite";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import CloseIcon from "@mui/icons-material/Close";
 
 const ShweetDetailsPage = () => {
   const navigate = useNavigate();
-  const [shweet, setShweet] = useState<Shweet | undefined>();
+  const [shweet, setShweet] = useState<ShweetDetails | undefined>();
   const [error, setError] = useState<String | undefined>();
   const { shweetId } = useParams();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -49,6 +50,24 @@ const ShweetDetailsPage = () => {
 
     getData();
   }, [shweetId]);
+
+  const likeOrUnlike = async () => {
+    if (shweetId === undefined || shweet === undefined) {
+      return;
+    }
+
+    let likeIncrement = 1;
+    if (shweet.liked) {
+      likeIncrement = -1;
+    }
+
+    setShweet({
+      ...shweet,
+      liked: !shweet.liked,
+      like_count: shweet.like_count + likeIncrement,
+    });
+    await likeShweet(shweetId);
+  };
 
   const handleClose = (
     event: React.SyntheticEvent | Event,
@@ -149,15 +168,17 @@ const ShweetDetailsPage = () => {
 
         <Box display="flex" flexGrow={1} justifyContent="space-evenly">
           <Typography>
-            XXX <Typography variant="caption">reshweets</Typography>
+            {shweet.reshweet_count}{" "}
+            <Typography variant="caption">reshweets</Typography>
           </Typography>
           <Box ml={2} />
           <Typography>
-            XXX <Typography variant="caption">likes</Typography>
+            {shweet.like_count} <Typography variant="caption">likes</Typography>
           </Typography>
           <Box ml={2} />
           <Typography>
-            XXX <Typography variant="caption">comments</Typography>
+            {shweet.comment_count}{" "}
+            <Typography variant="caption">comments</Typography>
           </Typography>
         </Box>
 
@@ -173,8 +194,12 @@ const ShweetDetailsPage = () => {
           </Tooltip>
           <Box ml={2} />
           <Tooltip title="like">
-            <IconButton>
-              <FavoriteBorderIcon />
+            <IconButton onClick={() => likeOrUnlike()}>
+              {shweet.liked ? (
+                <FavoriteIcon color="error" />
+              ) : (
+                <FavoriteBorderIcon />
+              )}
             </IconButton>
           </Tooltip>
           <Box ml={2} />

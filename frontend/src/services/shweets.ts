@@ -1,5 +1,5 @@
 import ApiError from "../models/errors/ApiError";
-import Shweet, { Timeline } from "../models/shweet";
+import { ShweetDetails, Timeline } from "../models/shweet";
 import { genericApiError, handleApiError } from "../utils/api";
 import { apiService } from "./api";
 
@@ -24,7 +24,7 @@ export const createShweet = async ({
 
 export const getShweetDetails = async (
   shweetId: string
-): Promise<Shweet | ApiError> => {
+): Promise<ShweetDetails | ApiError> => {
   const api = await apiService.getExecutor();
 
   try {
@@ -51,6 +51,17 @@ export const getUserline = async (id: string): Promise<Timeline | ApiError> => {
 
   try {
     const response = await api.get("userline/" + id);
+    return response.data["data"];
+  } catch (error) {
+    return handleApiError(error) ?? genericApiError;
+  }
+};
+
+export const likeShweet = async (shweetID: ShweetID): Promise<ShweetID | ApiError> => {
+  const api = await apiService.getExecutor();
+
+  try {
+    const response = await api.post("shweets/" + shweetID + "/like");
     return response.data["data"];
   } catch (error) {
     return handleApiError(error) ?? genericApiError;

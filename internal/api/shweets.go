@@ -41,7 +41,14 @@ func ListShweets(c *gin.Context) {
 }
 
 func GetShweet(c *gin.Context) {
-	shweet, err := query.GetShweetByID(c.Param("id"))
+	userID := ""
+
+	user, ok := middleware.GetUser(c)
+	if ok {
+		userID = user.ID
+	}
+
+	shweet, err := query.GetShweetDetailsByID(userID, c.Param("id"))
 
 	if err == query.ErrNotFound || err == query.ErrInvalidID {
 		util.AbortResponseNotFound(c)
@@ -52,4 +59,20 @@ func GetShweet(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": shweet})
+}
+
+func LikeOrUnlikeShweet(c *gin.Context) {
+	user, ok := middleware.GetUserOrAbort(c)
+	if !ok {
+		return
+	}
+
+	shweetID := c.Param("id")
+	err := query.LikeOrUnlikeShweet(user.ID, shweetID)
+
+	if err == query.ErrNotFound {
+		util.AbortResponseNotFound(c)
+	} else if err != nil {
+		util.AbortResponseUnexpectedError(c)
+	}
 }

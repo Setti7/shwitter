@@ -28,7 +28,6 @@ const theme = createTheme({
 export const fabBlackStyle = {
   color: "common.white",
   bgcolor: "#000",
-  borderRadius: "100%",
   border: "1px solid #666",
   "&:hover": {
     bgcolor: "#333",
