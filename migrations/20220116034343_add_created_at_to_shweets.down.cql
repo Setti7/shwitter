@@ -1,0 +1,1 @@
+ALTER TABLE shweets DROP created_at;

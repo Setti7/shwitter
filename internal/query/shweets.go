@@ -20,7 +20,7 @@ func GetShweetByID(id string) (shweet entity.Shweet, err error) {
 	}
 
 	m := map[string]interface{}{}
-	query := "SELECT id, user_id, message FROM shweets WHERE id=? LIMIT 1"
+	query := "SELECT id, user_id, message, created_at FROM shweets WHERE id=? LIMIT 1"
 	err = service.Cassandra().Query(query, uuid).Consistency(gocql.One).MapScan(m)
 	if err == gocql.ErrNotFound {
 		return shweet, ErrNotFound
@@ -30,9 +30,10 @@ func GetShweetByID(id string) (shweet entity.Shweet, err error) {
 	}
 
 	shweet = entity.Shweet{
-		ID:      m["id"].(gocql.UUID).String(),
-		UserID:  m["user_id"].(gocql.UUID).String(),
-		Message: m["message"].(string),
+		ID:        m["id"].(gocql.UUID).String(),
+		UserID:    m["user_id"].(gocql.UUID).String(),
+		Message:   m["message"].(string),
+		CreatedAt: m["created_at"].(time.Time),
 	}
 
 	err = EnrichShweetsWithUserInfo([]*entity.Shweet{&shweet})
@@ -67,8 +68,8 @@ func CreateShweet(userID string, f form.CreateShweetForm) (string, error) {
 		Message:   f.Message,
 		CreatedAt: time.Now(),
 	}
-	err := service.Cassandra().Query("INSERT INTO shweets (id, user_id, message) VALUES (?, ?, ?)", uuid, userID,
-		f.Message).Exec()
+	err := service.Cassandra().Query("INSERT INTO shweets (id, user_id, message, created_at) VALUES (?, ?, ?, ?)",
+		uuid, userID, f.Message, shweet.CreatedAt).Exec()
 	if err != nil {
 		log.LogError("query.CreateShweet", "Error creating shweet", err)
 		return "", ErrUnexpected

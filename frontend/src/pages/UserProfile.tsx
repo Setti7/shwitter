@@ -71,14 +71,14 @@ const UserProfilePage = () => {
               color="inherit"
               aria-label="go back"
               sx={{ mr: 2 }}
-              onClick={() => navigate(HOME_ROUTE)}
+              onClick={() => navigate(-1)}
             >
               <ArrowBackIcon />
             </IconButton>
 
-            <Box display="flex" alignItems="end">
+            <Box display="flex" alignItems="baseline">
               <Box flexGrow={1}>
-                <Typography>{profile.name}</Typography>
+                <Typography variant="h6">{profile.name}</Typography>
               </Box>
               <Typography ml={2} variant="caption">
                 {profile.shweets_count} shweets

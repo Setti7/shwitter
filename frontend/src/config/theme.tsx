@@ -20,8 +20,19 @@ const theme = createTheme({
     fontFamily: '"Signika", "Helvetica", "Arial", sans-serif',
     caption: {
       color: "#6E767D",
+      fontSize: "0.90rem"
     },
   },
 });
+
+export const fabBlackStyle = {
+  color: "common.white",
+  bgcolor: "#000",
+  borderRadius: "100%",
+  border: "1px solid #666",
+  "&:hover": {
+    bgcolor: "#333",
+  },
+};
 
 export default theme;

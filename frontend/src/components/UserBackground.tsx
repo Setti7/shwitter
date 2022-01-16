@@ -6,15 +6,7 @@ import { UserProfile } from "../models/user";
 import { followUser, getIsFollowing, unFollowUser } from "../services/user";
 import ShareIcon from "@mui/icons-material/Share";
 import CloseIcon from "@mui/icons-material/Close";
-
-const fabBlackStyle = {
-  color: "common.white",
-  bgcolor: "#000",
-  border: "1px solid #666",
-  "&:hover": {
-    bgcolor: "#333",
-  },
-};
+import { fabBlackStyle } from "../config/theme";
 
 const UserBackground: FC<{ userProfile: UserProfile }> = ({ userProfile }) => {
   const { user: currentUser } = useContext(AuthContext);

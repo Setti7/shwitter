@@ -1,0 +1,1 @@
+ALTER TABLE shweets ADD created_at TIMESTAMP;

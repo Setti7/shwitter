@@ -1,10 +1,11 @@
 import "@fontsource/signika";
 
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import {
   HOME_ROUTE,
   NEW_SHWEET_ROUTE,
+  SHWEET_DETAILS_ROUTE,
   SIGN_IN_ROUTE,
   SIGN_UP_ROUTE,
   USER_ROUTE,
@@ -19,6 +20,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import relativeTime from "dayjs/plugin/relativeTime";
 import UserProfilePage from "./pages/UserProfile";
+import ShweetDetailsPage from "./pages/ShweetDetails";
 
 function App() {
   useEffect(() => {
@@ -36,6 +38,7 @@ function App() {
           <Route path={SIGN_UP_ROUTE} element={<SignUpPage />} />
           <Route path={NEW_SHWEET_ROUTE} element={<NewShweetPage />} />
           <Route path={USER_ROUTE} element={<UserProfilePage />} />
+          <Route path={SHWEET_DETAILS_ROUTE} element={<ShweetDetailsPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
