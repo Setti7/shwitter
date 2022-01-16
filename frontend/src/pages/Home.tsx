@@ -52,11 +52,6 @@ const HomePage = () => {
             alignItems: "stretch",
           }}
         >
-          {/* TODO: 
-          [X] Fix timeline (we need to invert the order of shweets)
-          [ ] Add userline and profile view
-          */}
-
           {error !== undefined ? (
             <Typography textAlign="center">{error}</Typography>
           ) : (

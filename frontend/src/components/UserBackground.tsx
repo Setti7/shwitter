@@ -68,7 +68,7 @@ const UserBackground: FC<{ userProfile: UserProfile }> = ({ userProfile: user })
           style={{ maxWidth: "100%", height: "auto" }}
           alt=""
           // TODO: use user background image
-          src="https://pbs.twimg.com/profile_banners/2451306812/1502508575/1500x500"
+          src="/placeholder-bg.png"
         ></img>
         <Box
           ml={2}
