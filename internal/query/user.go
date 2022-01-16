@@ -122,13 +122,14 @@ func CreateNewUserWithCredentials(f form.CreateUserForm) (user entity.User, err 
 	user.Username = f.Username
 	user.Name = f.Name
 	user.Email = f.Email
+	user.JoinedAt = time.Now()
 
 	batch := service.Cassandra().NewBatch(gocql.LoggedBatch)
 	batch.Query("INSERT INTO credentials (username, password, user_id) VALUES (?, ?, ?)",
 		f.Username, hashedPassword, uuid)
 	batch.Query(
-		"INSERT INTO users (id, username, name, email) VALUES (?, ?, ?, ?)",
-		user.ID, user.Username, user.Name, user.Email)
+		"INSERT INTO users (id, username, name, email, joined_at) VALUES (?, ?, ?, ?, ?)",
+		user.ID, user.Username, user.Name, user.Email, user.JoinedAt)
 
 	err = service.Cassandra().ExecuteBatch(batch)
 	if err != nil {
