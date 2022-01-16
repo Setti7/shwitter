@@ -42,13 +42,9 @@ const ShweetCard: FC<Props> = ({ shweet }) => {
               {createdAtHumanized}
             </Typography>
             {/* TODO: 
-            [X] Add likes
-            [ ] Add reshweet
-            [X] Add share button
-            [ ] Maybe add responses
-            [ ] List users who liked/reshweeted
-            [X] Add click to go to details
-            [X] Add click to go to profile
+            [ ] Add likes to home page
+            [ ] Add reshweet to home page
+            [ ] Add share button to home page
             */}
           </Box>
           <Typography variant="body2">{shweet.message}</Typography>

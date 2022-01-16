@@ -166,6 +166,11 @@ const ShweetDetailsPage = () => {
           <Divider />
         </Box>
 
+        {/* TODO:
+        [ ] List users who liked/reshweeted
+        [ ] Add responses (with mentions)
+        */}
+        
         <Box display="flex" flexGrow={1} justifyContent="space-evenly">
           <Typography>
             {shweet.reshweet_count}{" "}

@@ -25,7 +25,7 @@ const UserDetails: FC<{ userProfile: UserProfile }> = ({ userProfile }) => {
         <Box mt={1} />
         <Typography variant="body2">{userProfile.bio}</Typography>
 
-        {/* TODO: add page where user can list its followers/friends */}
+        {/* TODO: list user followers/friends */}
         <Box mt={1} display="flex" alignItems="end">
           <Box display="flex" flexGrow={1}>
             <Typography>
