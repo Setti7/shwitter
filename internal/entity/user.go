@@ -19,9 +19,8 @@ type UserProfile struct {
 }
 
 type FriendOrFollower struct {
-	UserID string    `json:"-"`
-	User   *User     `json:"user"`
-	Since  time.Time `json:"since"`
+	User
+	Since time.Time `json:"since"`
 }
 
 // The string value for the enum MUST be the same as the cassandra table for

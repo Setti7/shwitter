@@ -84,13 +84,14 @@ func EnrichUsers(ids []string) (map[string]*entity.User, error) {
 
 	if len(ids) > 0 {
 		m := map[string]interface{}{}
-		iterable := service.Cassandra().Query("SELECT id, username, name FROM users WHERE id IN ?", ids).Iter()
+		iterable := service.Cassandra().Query("SELECT id, username, name, bio FROM users WHERE id IN ?", ids).Iter()
 		for iterable.MapScan(m) {
 			userID := m["id"].(gocql.UUID).String()
 			userMap[userID] = &entity.User{
 				ID:       userID,
 				Username: m["username"].(string),
 				Name:     m["name"].(string),
+				Bio:      m["bio"].(string),
 			}
 			m = map[string]interface{}{}
 		}
@@ -166,8 +167,8 @@ func listFriendsOrFollowers(userID string, useFriendsTable bool, p *form.Paginat
 		}
 
 		fof := &entity.FriendOrFollower{
-			UserID: friendOrFollowerID,
-			Since:  m["since"].(time.Time),
+			User:  entity.User{ID: friendOrFollowerID},
+			Since: m["since"].(time.Time),
 		}
 		friendOrFollowers = append(friendOrFollowers, fof)
 		m = map[string]interface{}{}
@@ -181,7 +182,7 @@ func listFriendsOrFollowers(userID string, useFriendsTable bool, p *form.Paginat
 
 	var friendOrFollowerIDs []string
 	for _, f := range friendOrFollowers {
-		friendOrFollowerIDs = append(friendOrFollowerIDs, f.UserID)
+		friendOrFollowerIDs = append(friendOrFollowerIDs, f.ID)
 	}
 
 	// With the list of friend or followers UUIDs, enrich their information
@@ -192,7 +193,7 @@ func listFriendsOrFollowers(userID string, useFriendsTable bool, p *form.Paginat
 	}
 
 	for _, f := range friendOrFollowers {
-		f.User = users[f.UserID]
+		f.User = *users[f.ID]
 	}
 
 	return friendOrFollowers, nil

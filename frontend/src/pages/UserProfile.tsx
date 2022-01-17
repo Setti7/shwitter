@@ -1,7 +1,6 @@
 import {
   Container,
   Box,
-  Divider,
   Typography,
   AppBar,
   Toolbar,
@@ -9,21 +8,18 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getUserline } from "../services/shweets";
-import { Timeline } from "../models/shweet";
 import ApiError from "../models/errors/ApiError";
-import ShweetCard from "../components/ShweetCard";
 import { HOME_ROUTE } from "../config/routes";
 import UserDetails from "../components/UserDetails";
 import { getUserProfile } from "../services/user";
 import { UserProfile } from "../models/user";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import UserBackground from "../components/UserBackground";
+import UserLine from "../components/UserLine";
 
 const UserProfilePage = () => {
   const navigate = useNavigate();
   const [error, setError] = useState<String | undefined>();
-  const [userline, setUserline] = useState<Timeline>([]);
   const [profile, setProfile] = useState<UserProfile | undefined>();
 
   const { userId } = useParams();
@@ -35,21 +31,12 @@ const UserProfilePage = () => {
         return;
       }
 
-      const [userResult, lineResult] = await Promise.all([
-        getUserProfile(userId),
-        getUserline(userId),
-      ]);
+      const userResult = await getUserProfile(userId);
 
       if (userResult instanceof ApiError) {
         setError(userResult.getFormattedStatus());
       } else {
         setProfile(userResult);
-      }
-
-      if (lineResult instanceof ApiError) {
-        setError(lineResult.getFormattedStatus());
-      } else {
-        setUserline(lineResult);
       }
     };
 
@@ -58,7 +45,15 @@ const UserProfilePage = () => {
 
   if (userId === undefined || profile === undefined) {
     // TODO loading
-    return <></>;
+    return (
+      <>
+        {error !== undefined ? (
+          <Typography textAlign="center">{error}</Typography>
+        ) : (
+          <></>
+        )}
+      </>
+    );
   }
 
   return (
@@ -89,9 +84,9 @@ const UserProfilePage = () => {
       </Box>
 
       <Container maxWidth="sm" sx={{ padding: "0" }}>
-          <UserBackground userProfile={profile} />
-          <UserDetails userProfile={profile} />
-          <Box mb={3} />
+        <UserBackground userProfile={profile} />
+        <UserDetails userProfile={profile} />
+        <Box mb={3} />
       </Container>
 
       <Container component="main" maxWidth="sm">
@@ -103,20 +98,7 @@ const UserProfilePage = () => {
             alignItems: "stretch",
           }}
         >
-          {error !== undefined ? (
-            <Typography textAlign="center">{error}</Typography>
-          ) : (
-            <></>
-          )}
-
-          {userline.map((s) => {
-            return (
-              <Box mb={1}>
-                <ShweetCard shweet={s} />
-                <Divider sx={{ marginTop: 2 }} />
-              </Box>
-            );
-          })}
+          <UserLine userId={userId} />
         </Box>
       </Container>
     </>

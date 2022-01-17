@@ -12,3 +12,12 @@ export interface UserProfile extends User {
   friends_count: number;
   shweets_count: number;
 }
+
+export interface FriendOrFollower extends User {
+  since: Date;
+}
+
+export enum FriendOrFollowerType {
+  Friend,
+  Follower,
+}
