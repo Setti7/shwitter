@@ -9,11 +9,11 @@ import (
 	"time"
 )
 
-// Get the timeline for the given user. The returned list of Shweets are enriched.
+// Get the timeline for the given user.
 //
 // Returns ErrUnexpected for any errors.
 // TODO: add pagination
-func GetLineForUser(userID string, line entity.Line) ([]*entity.Shweet, error) {
+func GetLineForUser(userID string, line entity.Line) ([]*entity.ShweetDetails, error) {
 	if userID == "" {
 		return nil, ErrInvalidID
 	}
@@ -44,7 +44,12 @@ func GetLineForUser(userID string, line entity.Line) ([]*entity.Shweet, error) {
 		return nil, err // we don't need to log the error because it's already logged inside that func
 	}
 
-	return shweets, nil
+	shweetDetails, err := EnrichShweetsDetails(userID, shweets)
+	if err != nil {
+		return nil, err
+	}
+
+	return shweetDetails, nil
 }
 
 // Insert a shweet into a line for a specific user.

@@ -51,3 +51,50 @@ func GetCounterValue(ID string, c entity.CounterTable) (count int, err error) {
 		return count, nil
 	}
 }
+
+// Enrich shweets with a counter.
+//
+// Returns ErrUnexpected for any other errors.
+func EnrichShweetCounter(shweets []*entity.ShweetDetails, c entity.CounterTable) ([]*entity.ShweetDetails, error) {
+	if len(shweets) == 0 {
+		return shweets, nil
+	}
+
+	shweetMap := make(map[string]*entity.ShweetDetails)
+
+	// Get a list of the shweet IDs and populate a map with the shweets
+	shweetIDs := make([]string, len(shweets))
+	for index, shweet := range shweets {
+		shweetIDs[index] = shweet.ID
+		shweetMap[shweet.ID] = shweet
+	}
+
+	// Enriching with the count
+	m := map[string]interface{}{}
+	iterable := service.Cassandra().Query(fmt.Sprintf("SELECT id, count FROM %s WHERE id IN ?", c), shweetIDs).Iter()
+	for iterable.MapScan(m) {
+		shweetID := m["id"].(gocql.UUID).String()
+		count := int(m["count"].(int64))
+		if c == entity.ShweetLikesCount {
+			shweetMap[shweetID].LikeCount = count
+		} else if c == entity.ShweetCommentsCount {
+			shweetMap[shweetID].CommentCount = count
+		} else if c == entity.ShweetReshweetsCount {
+			shweetMap[shweetID].ReshweetCount = count
+		}
+		m = map[string]interface{}{}
+	}
+
+	err := iterable.Close()
+	if err != nil {
+		log.LogError("query.EnrichShweetCounter", "Could not enrich shweet counter", err)
+		return nil, ErrUnexpected
+	}
+
+	shweetDetails := make([]*entity.ShweetDetails, len(shweets))
+	for index, id := range shweetIDs {
+		shweetDetails[index] = shweetMap[id]
+	}
+
+	return shweetDetails, nil
+}

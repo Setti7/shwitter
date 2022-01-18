@@ -14,7 +14,7 @@ import (
 //
 // Returns ErrInvalidID if the ID is empty, ErrNotFound if the shweet was not found and ErrUnexpected
 // for any other errors.
-func GetShweetByID(id string) (shweet entity.Shweet, err error) {
+func GetShweetByID(id string) (shweet *entity.Shweet, err error) {
 	uuid, err := gocql.ParseUUID(id)
 	if err != nil {
 		return shweet, ErrInvalidID
@@ -30,14 +30,14 @@ func GetShweetByID(id string) (shweet entity.Shweet, err error) {
 		return shweet, ErrUnexpected
 	}
 
-	shweet = entity.Shweet{
+	shweet = &entity.Shweet{
 		ID:        m["id"].(gocql.UUID).String(),
 		UserID:    m["user_id"].(gocql.UUID).String(),
 		Message:   m["message"].(string),
 		CreatedAt: m["created_at"].(time.Time),
 	}
 
-	err = EnrichShweetsWithUserInfo([]*entity.Shweet{&shweet})
+	err = EnrichShweetsWithUserInfo([]*entity.Shweet{shweet})
 	if err != nil {
 		return shweet, err // we don't need to log the error because it's already logged inside that func
 	}
@@ -49,47 +49,18 @@ func GetShweetByID(id string) (shweet entity.Shweet, err error) {
 //
 // Returns ErrInvalidID if the ID is empty, ErrNotFound if the shweet was not found and ErrUnexpected
 // for any other errors.
-func GetShweetDetailsByID(userID string, shweetID string) (d entity.ShweetDetails, err error) {
+func GetShweetDetailsByID(userID string, shweetID string) (d *entity.ShweetDetails, err error) {
 	shweet, err := GetShweetByID(shweetID)
 	if err != nil {
 		return d, err
 	}
 
-	likeCount, err := GetCounterValue(shweetID, entity.ShweetLikesCount)
+	shweetDetails, err := EnrichShweetsDetails(userID, []*entity.Shweet{shweet})
 	if err != nil {
 		return d, err
 	}
 
-	isLiked := false
-	if userID != "" {
-		isLiked, err = IsShweetLiked(userID, shweetID)
-		if err != nil {
-			return d, err
-		}
-
-		// TODO: add isReshweeted
-	}
-
-	reshweetCount, err := GetCounterValue(shweetID, entity.ShweetReshweetsCount)
-	if err != nil {
-		return d, err
-	}
-
-	commentCount, err := GetCounterValue(shweetID, entity.ShweetCommentsCount)
-	if err != nil {
-		return d, err
-	}
-
-	d = entity.ShweetDetails{
-		Shweet:        shweet,
-		LikeCount:     likeCount,
-		ReshweetCount: reshweetCount,
-		CommentCount: commentCount,
-		Liked:         isLiked,
-		ReShweeted:    false,
-	}
-
-	return d, err
+	return shweetDetails[0], nil
 }
 
 // Create a shweet
@@ -174,6 +145,49 @@ func EnrichShweetsWithUserInfo(shweets []*entity.Shweet) error {
 		shweet.User = users[shweet.UserID]
 	}
 	return nil
+}
+
+// Enrich a slice of shweets with its details
+//
+// Returns ErrUnexpected on any error.
+func EnrichShweetsDetails(userID string, shweets []*entity.Shweet) ([]*entity.ShweetDetails, error) {
+	if len(shweets) == 0 {
+		return []*entity.ShweetDetails{}, nil
+	}
+
+	// Make a slice of the shweet details that will be enriched
+	shweetDetails := make([]*entity.ShweetDetails, len(shweets))
+	for index, shweet := range shweets {
+		shweetDetails[index] = &entity.ShweetDetails{Shweet: *shweet}
+	}
+
+	// Enriching with like counter
+	shweetDetails, err := EnrichShweetCounter(shweetDetails, entity.ShweetLikesCount)
+	if err != nil {
+		return nil, err
+	}
+
+	// Enriching with comment counter
+	shweetDetails, err = EnrichShweetCounter(shweetDetails, entity.ShweetCommentsCount)
+	if err != nil {
+		return nil, err
+	}
+
+	// Enriching with reshweets counter
+	shweetDetails, err = EnrichShweetCounter(shweetDetails, entity.ShweetReshweetsCount)
+	if err != nil {
+		return nil, err
+	}
+
+	// Enrich with like and reshweeted status
+	if userID != "" {
+		shweetDetails, err = EnrichShweetStatus(userID, shweetDetails)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return shweetDetails, nil
 }
 
 // List all shweets. The returned list of Shweets are enriched.
@@ -291,4 +305,53 @@ func IsShweetLiked(userID string, shweetID string) (bool, error) {
 	} else {
 		return false, nil
 	}
+}
+
+// Enrich a shweet with "liked" and "reshweeted" statuses
+//
+// Returns ErrUnexpected on any error.
+func EnrichShweetStatus(userID string, shweets []*entity.ShweetDetails) ([]*entity.ShweetDetails, error) {
+	if len(shweets) == 0 {
+		return []*entity.ShweetDetails{}, nil
+	}
+
+	shweetMap := make(map[string]*entity.ShweetDetails)
+
+	// Get a list of the shweet IDs and populate a map with the shweets
+	shweetIDs := make([]string, len(shweets))
+	for index, shweet := range shweets {
+		// by default shweets are not liked or reshweeted
+		shweet.Liked = false
+		shweet.ReShweeted = false
+
+		shweetIDs[index] = shweet.ID
+		shweetMap[shweet.ID] = shweet
+	}
+
+	// Enriching with liked status
+	m := map[string]interface{}{}
+	iterable := service.Cassandra().Query(
+		"SELECT shweet_id FROM shweet_liked_by_users WHERE shweet_id IN ? AND user_id = ?",
+		shweetIDs, userID).Iter()
+	for iterable.MapScan(m) {
+		shweetID := m["shweet_id"].(gocql.UUID).String()
+		// set liked = true for all shweets that were found
+		shweetMap[shweetID].Liked = true
+		m = map[string]interface{}{}
+	}
+
+	err := iterable.Close()
+	if err != nil {
+		log.LogError("query.EnrichShweetIsLiked", "Could not enrich shweet liked status", err)
+		return nil, ErrUnexpected
+	}
+
+	// TODO: enrich with isReshweeted status
+
+	shweetDetails := make([]*entity.ShweetDetails, len(shweets))
+	for index, id := range shweetIDs {
+		shweetDetails[index] = shweetMap[id]
+	}
+
+	return shweetDetails, nil
 }
