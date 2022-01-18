@@ -17,7 +17,7 @@ func GetTimelineForCurrentUser(c *gin.Context) {
 		return
 	}
 
-	shweets, err := query.GetLineForUser(user.ID, entity.TimeLine)
+	shweets, err := query.GetLineForUser(user.ID, user.ID, entity.TimeLine)
 	if err != nil {
 		util.AbortResponseUnexpectedError(c)
 		return
@@ -28,9 +28,15 @@ func GetTimelineForCurrentUser(c *gin.Context) {
 
 // TODO: paginate
 func GetUserLine(c *gin.Context) {
+	currentUserID := ""
+	currentUser, ok := middleware.GetUser(c)
+	if ok {
+		currentUserID = currentUser.ID
+	}
+
 	userID := c.Param("id")
 
-	shweets, err := query.GetLineForUser(userID, entity.UserLine)
+	shweets, err := query.GetLineForUser(currentUserID, userID, entity.UserLine)
 	if err != nil {
 		util.AbortResponseUnexpectedError(c)
 		return
