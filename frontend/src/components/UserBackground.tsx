@@ -76,6 +76,7 @@ const UserBackground: FC<{ userProfile: UserProfile }> = ({ userProfile }) => {
           {/* TODO: use user profile picture */}
           <Avatar
             alt={userProfile.name}
+            src="/broken.png"
             sx={{
               width: 76,
               height: 76,
