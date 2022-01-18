@@ -1,6 +1,6 @@
 import User from "./user";
 
-export type Timeline = Shweet[];
+export type Timeline = ShweetDetails[];
 
 export default interface Shweet {
   id: string;

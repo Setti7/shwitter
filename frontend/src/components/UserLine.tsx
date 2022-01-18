@@ -38,7 +38,7 @@ const UserLine: FC<Props> = ({ userId }) => {
       {userline.map((s) => {
         return (
           <Box mb={1}>
-            <ShweetCard shweet={s} />
+            <ShweetCard initialShweet={s} />
             <Divider sx={{ marginTop: 2 }} />
           </Box>
         );

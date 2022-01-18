@@ -56,10 +56,7 @@ const ShweetDetailsPage = () => {
       return;
     }
 
-    let likeIncrement = 1;
-    if (shweet.liked) {
-      likeIncrement = -1;
-    }
+    const likeIncrement = shweet.liked ? -1 : 1;
 
     setShweet({
       ...shweet,
@@ -199,7 +196,7 @@ const ShweetDetailsPage = () => {
           </Tooltip>
           <Box ml={2} />
           <Tooltip title="like">
-            <IconButton onClick={() => likeOrUnlike()}>
+            <IconButton onClick={likeOrUnlike}>
               {shweet.liked ? (
                 <FavoriteIcon color="error" />
               ) : (
