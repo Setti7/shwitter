@@ -164,26 +164,26 @@ func EnrichShweetsDetails(userID string, shweets []*entity.Shweet) ([]*entity.Sh
 	}
 
 	// Enriching with like counter
-	shweetDetails, err := counter.ShweetLikesCounter.EnrichShweetsCounters(shweetDetails)
+	shweetDetails, err := counter.ShweetLikesCounter.EnrichShweets(shweetDetails)
 	if err != nil {
 		return nil, err
 	}
 
 	// Enriching with comment counter
-	shweetDetails, err = counter.ShweetCommentsCounter.EnrichShweetsCounters(shweetDetails)
+	shweetDetails, err = counter.ShweetCommentsCounter.EnrichShweets(shweetDetails)
 	if err != nil {
 		return nil, err
 	}
 
 	// Enriching with reshweets counter
-	shweetDetails, err = counter.ShweetReshweetsCounter.EnrichShweetsCounters(shweetDetails)
+	shweetDetails, err = counter.ShweetReshweetsCounter.EnrichShweets(shweetDetails)
 	if err != nil {
 		return nil, err
 	}
 
 	// Enrich with like and reshweeted status
 	if userID != "" {
-		shweetDetails, err = EnrichShweetStatus(userID, shweetDetails)
+		shweetDetails, err = EnrichShweetsStatuses(userID, shweetDetails)
 		if err != nil {
 			return nil, err
 		}
@@ -307,10 +307,10 @@ func IsShweetLiked(userID string, shweetID string) (bool, error) {
 	}
 }
 
-// Enrich a shweet with "liked" and "reshweeted" statuses
+// Enrich a slice of shweets with "liked" and "reshweeted" statuses.
 //
 // Returns ErrUnexpected on any error.
-func EnrichShweetStatus(userID string, shweets []*entity.ShweetDetails) ([]*entity.ShweetDetails, error) {
+func EnrichShweetsStatuses(userID string, shweets []*entity.ShweetDetails) ([]*entity.ShweetDetails, error) {
 	if len(shweets) == 0 {
 		return []*entity.ShweetDetails{}, nil
 	}

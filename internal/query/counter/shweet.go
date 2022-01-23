@@ -29,7 +29,7 @@ func (c shweetCounterTable) GetValue(ID string) (count int, err error) {
 // Enrich shweets with its counters.
 //
 // Returns ErrUnexpected for any other errors.
-func (c shweetCounterTable) EnrichShweetsCounters(shweets []*entity.ShweetDetails) ([]*entity.ShweetDetails, error) {
+func (c shweetCounterTable) EnrichShweets(shweets []*entity.ShweetDetails) ([]*entity.ShweetDetails, error) {
 	if len(shweets) == 0 {
 		return shweets, nil
 	}
