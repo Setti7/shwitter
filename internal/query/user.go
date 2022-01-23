@@ -283,16 +283,7 @@ func FollowOrUnfollowUser(currentUserID string, otherUserID string) error {
 
 	batch := service.Cassandra().NewBatch(gocql.LoggedBatch)
 
-	if isFollowing {
-		// From the userID perspective: userID (me) is following otherUserID
-		batch.Query(
-			"DELETE FROM friends WHERE user_id = ? AND friend_id = ?",
-			currentUserID, otherUserID)
-
-		// From the otherUserID perspective: otherUserID (me) is being followed by userID
-		batch.Query("DELETE FROM followers WHERE user_id = ? AND follower_id = ?",
-			otherUserID, currentUserID)
-	} else {
+	if !isFollowing {
 		// From the userID perspective: userID (me) is following otherUserID
 		batch.Query(
 			"INSERT INTO friends (user_id, friend_id, since) VALUES (?, ?, ?)",
@@ -301,10 +292,20 @@ func FollowOrUnfollowUser(currentUserID string, otherUserID string) error {
 		// From the otherUserID perspective: otherUserID (me) is being followed by userID
 		batch.Query("INSERT INTO followers (user_id, follower_id, since) VALUES (?, ?, ?)",
 			otherUserID, currentUserID, time.Now())
+	} else {
+		// From the userID perspective: userID (me) is following otherUserID
+		batch.Query(
+			"DELETE FROM friends WHERE user_id = ? AND friend_id = ?",
+			currentUserID, otherUserID)
+
+		// From the otherUserID perspective: otherUserID (me) is being followed by userID
+		batch.Query("DELETE FROM followers WHERE user_id = ? AND follower_id = ?",
+			otherUserID, currentUserID)
 	}
 
 	err = service.Cassandra().ExecuteBatch(batch)
 	if err != nil {
+		log.LogError("query.FollowOrUnfollowUser", "Could not follow or unfollow user", err)
 		return errors.ErrUnexpected
 	}
 

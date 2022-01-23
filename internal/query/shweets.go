@@ -243,35 +243,33 @@ func LikeOrUnlikeShweet(userID string, shweetID string) error {
 		return errors.ErrNotFound
 	}
 
+	batch := service.Cassandra().NewBatch(gocql.LoggedBatch)
+
 	// Add/remove this shweet to the list of shweets liked by this user
 	if !isLiked {
-		err = service.Cassandra().Query(
+		batch.Query(
 			"INSERT INTO user_liked_shweets (user_id, shweet_id) VALUES (?, ?)",
-			userID, shweetID).Exec()
+			userID, shweetID)
 	} else {
-		err = service.Cassandra().Query(
+		batch.Query(
 			"DELETE FROM user_liked_shweets WHERE user_id = ? AND shweet_id = ?",
-			userID, shweetID).Exec()
-	}
-	if err != nil {
-		log.LogError("query.likeOrDislikeShweet",
-			"Could not add/remove shweet to list of user liked shweets", err)
-		return errors.ErrUnexpected
+			userID, shweetID)
 	}
 
 	// Add/remove this user to the list of users that liked this shweet
 	if !isLiked {
-		err = service.Cassandra().Query(
+		batch.Query(
 			"INSERT INTO shweet_liked_by_users (shweet_id, user_id) VALUES (?, ?)",
-			shweetID, userID).Exec()
+			shweetID, userID)
 	} else {
-		err = service.Cassandra().Query(
+		batch.Query(
 			"DELETE FROM shweet_liked_by_users WHERE shweet_id = ? AND user_id = ?",
-			shweetID, userID).Exec()
+			shweetID, userID)
 	}
+
+	err = service.Cassandra().ExecuteBatch(batch)
 	if err != nil {
-		log.LogError("query.likeOrDislikeShweet",
-			"Could not add/remove user to list of users that liked shweet", err)
+		log.LogError("query.likeOrDislikeShweet", "Could not like or dislike shweet", err)
 		return errors.ErrUnexpected
 	}
 
