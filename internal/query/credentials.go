@@ -2,6 +2,7 @@ package query
 
 import (
 	"github.com/Setti7/shwitter/internal/entity"
+	"github.com/Setti7/shwitter/internal/errors"
 	"github.com/Setti7/shwitter/internal/log"
 	"github.com/Setti7/shwitter/internal/service"
 	"github.com/gocql/gocql"
@@ -16,10 +17,10 @@ func GetUserCredentials(username string) (id string, creds entity.Credentials, e
 
 	err = service.Cassandra().Query(query, username).MapScan(m)
 	if err == gocql.ErrNotFound {
-		return id, creds, ErrNotFound
+		return id, creds, errors.ErrNotFound
 	} else if err != nil {
 		log.LogError("query.GetUserCredentials", "Could not get user credentials", err)
-		return id, creds, ErrUnexpected
+		return id, creds, errors.ErrUnexpected
 	}
 
 	id = m["user_id"].(gocql.UUID).String()

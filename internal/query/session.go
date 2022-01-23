@@ -2,6 +2,7 @@ package query
 
 import (
 	"github.com/Setti7/shwitter/internal/entity"
+	"github.com/Setti7/shwitter/internal/errors"
 	"github.com/Setti7/shwitter/internal/log"
 	"github.com/Setti7/shwitter/internal/service"
 	"github.com/Setti7/shwitter/internal/session"
@@ -16,17 +17,17 @@ import (
 // for any other errors.
 func GetSession(userID string, sessID string) (sess entity.Session, err error) {
 	if userID == "" || sessID == "" {
-		return sess, ErrInvalidID
+		return sess, errors.ErrInvalidID
 	}
 
 	query := "SELECT id, user_id, expiration FROM sessions WHERE user_id=? AND id=? LIMIT 1"
 	m := map[string]interface{}{}
 	err = service.Cassandra().Query(query, userID, sessID).MapScan(m)
 	if err == gocql.ErrNotFound {
-		return sess, ErrNotFound
+		return sess, errors.ErrNotFound
 	} else if err != nil {
 		log.LogError("query.GetSession", "Could not get session", err)
-		return sess, ErrUnexpected
+		return sess, errors.ErrUnexpected
 	}
 
 	sess.ID = sessID
@@ -41,7 +42,7 @@ func GetSession(userID string, sessID string) (sess entity.Session, err error) {
 // Returns ErrInvalidID if the userID is empty and ErrUnexpected for any other errors.
 func ListSessionsForUser(userID string) ([]*entity.Session, error) {
 	if userID == "" {
-		return nil, ErrInvalidID
+		return nil, errors.ErrInvalidID
 	}
 
 	query := "SELECT id, user_id, expiration FROM sessions WHERE user_id=?"
@@ -64,7 +65,7 @@ func ListSessionsForUser(userID string) ([]*entity.Session, error) {
 	err := iterator.Close()
 	if err != nil {
 		log.LogError("query.ListSessionsForUser", "Could list the user sessions", err)
-		return nil, ErrUnexpected
+		return nil, errors.ErrUnexpected
 	}
 
 	return sessions, nil
@@ -75,7 +76,7 @@ func ListSessionsForUser(userID string) ([]*entity.Session, error) {
 // Returns ErrInvalidID if the ID is empty and ErrUnexpected for any other errors.
 func CreateSession(userID string) (sess entity.Session, err error) {
 	if userID == "" {
-		return sess, ErrInvalidID
+		return sess, errors.ErrInvalidID
 	}
 
 	id := session.NewID()
@@ -85,7 +86,7 @@ func CreateSession(userID string) (sess entity.Session, err error) {
 		"INSERT INTO sessions (id, user_id, expiration) VALUES (?, ?, ?)",
 		id, userID, expiration).Exec(); err != nil {
 		log.LogError("query.CreateSession", "Could not create session", err)
-		return sess, ErrUnexpected
+		return sess, errors.ErrUnexpected
 	}
 
 	sess.ID = id
@@ -101,14 +102,14 @@ func CreateSession(userID string) (sess entity.Session, err error) {
 // Returns ErrInvalidID if any of the IDs are empty and ErrUnexpected for any other errors.
 func DeleteSession(userID string, sessID string) (err error) {
 	if userID == "" || sessID == "" {
-		return ErrInvalidID
+		return errors.ErrInvalidID
 	}
 
 	query := "DELETE FROM sessions WHERE user_id=? AND id=?"
 	err = service.Cassandra().Query(query, userID, sessID).Exec()
 	if err != nil {
 		log.LogError("query.DeleteSession", "Could not delete session", err)
-		return ErrUnexpected
+		return errors.ErrUnexpected
 	}
 
 	return nil

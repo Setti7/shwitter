@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 
+	"github.com/Setti7/shwitter/internal/errors"
 	"github.com/Setti7/shwitter/internal/form"
 	"github.com/Setti7/shwitter/internal/middleware"
 	"github.com/Setti7/shwitter/internal/query"
@@ -60,7 +61,6 @@ func ListUserSessions(c *gin.Context) {
 }
 
 func DeleteSession(c *gin.Context) {
-	// Get the session user
 	user, ok := middleware.GetUserOrAbort(c)
 	if !ok {
 		return
@@ -68,7 +68,7 @@ func DeleteSession(c *gin.Context) {
 
 	sessID := c.Param("id")
 	err := query.DeleteSession(user.ID, sessID)
-	if err == query.ErrInvalidID {
+	if err == errors.ErrInvalidID {
 		util.AbortResponseNotFound(c)
 	} else if err != nil {
 		util.AbortResponseUnexpectedError(c)

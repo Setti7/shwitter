@@ -2,11 +2,13 @@ package query
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/Setti7/shwitter/internal/entity"
+	"github.com/Setti7/shwitter/internal/errors"
 	"github.com/Setti7/shwitter/internal/log"
 	"github.com/Setti7/shwitter/internal/service"
 	"github.com/gocql/gocql"
-	"time"
 )
 
 // Get the timeline for the given user. "currentUserID" can be empty.
@@ -15,7 +17,7 @@ import (
 // TODO: add pagination
 func GetLineForUser(currentUserID string, userID string, line entity.Line) ([]*entity.ShweetDetails, error) {
 	if userID == "" {
-		return nil, ErrInvalidID
+		return nil, errors.ErrInvalidID
 	}
 
 	q := fmt.Sprintf("SELECT shweet_id, shweet_message, posted_by, created_at FROM %s WHERE user_id = ?", line)
@@ -36,7 +38,7 @@ func GetLineForUser(currentUserID string, userID string, line entity.Line) ([]*e
 	err := iterable.Close()
 	if err != nil {
 		log.LogError("query.GetLineForUser", "Error getting timeline for user", err)
-		return nil, ErrUnexpected
+		return nil, errors.ErrUnexpected
 	}
 
 	err = EnrichShweetsWithUserInfo(shweets)
@@ -60,7 +62,7 @@ func InsertShweetIntoLine(userID string, s *entity.Shweet, line entity.Line) err
 	err := service.Cassandra().Query(q, userID, s.ID, s.Message, s.UserID, s.CreatedAt).Exec()
 	if err != nil {
 		log.LogError("query.InsertShweetIntoLine", "Error while inserting shweet into user timeline", err)
-		return ErrUnexpected
+		return errors.ErrUnexpected
 	}
 
 	return nil

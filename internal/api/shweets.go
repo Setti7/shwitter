@@ -1,12 +1,14 @@
 package api
 
 import (
+	"net/http"
+
+	"github.com/Setti7/shwitter/internal/errors"
 	"github.com/Setti7/shwitter/internal/form"
 	"github.com/Setti7/shwitter/internal/middleware"
 	"github.com/Setti7/shwitter/internal/query"
 	"github.com/Setti7/shwitter/internal/util"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 func CreateShweet(c *gin.Context) {
@@ -50,7 +52,7 @@ func GetShweet(c *gin.Context) {
 
 	shweet, err := query.GetShweetDetailsByID(userID, c.Param("id"))
 
-	if err == query.ErrNotFound || err == query.ErrInvalidID {
+	if err == errors.ErrNotFound || err == errors.ErrInvalidID {
 		util.AbortResponseNotFound(c)
 		return
 	} else if err != nil {
@@ -70,7 +72,7 @@ func LikeOrUnlikeShweet(c *gin.Context) {
 	shweetID := c.Param("id")
 	err := query.LikeOrUnlikeShweet(user.ID, shweetID)
 
-	if err == query.ErrNotFound {
+	if err == errors.ErrNotFound {
 		util.AbortResponseNotFound(c)
 	} else if err != nil {
 		util.AbortResponseUnexpectedError(c)

@@ -3,7 +3,11 @@ package api
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/Setti7/shwitter/internal/entity"
+	"github.com/Setti7/shwitter/internal/errors"
 	"github.com/Setti7/shwitter/internal/form"
 	"github.com/Setti7/shwitter/internal/middleware"
 	"github.com/Setti7/shwitter/internal/query"
@@ -11,8 +15,6 @@ import (
 	"github.com/Setti7/shwitter/internal/util"
 	"github.com/bsm/redislock"
 	"github.com/gin-gonic/gin"
-	"net/http"
-	"time"
 )
 
 func ListUsers(c *gin.Context) {
@@ -30,7 +32,7 @@ func GetUser(c *gin.Context) {
 	id := c.Param("id")
 	user, err := query.GetUserByID(id)
 
-	if err == query.ErrNotFound || err == query.ErrInvalidID {
+	if err == errors.ErrNotFound || err == errors.ErrInvalidID {
 		util.AbortResponseNotFound(c)
 	} else if err != nil {
 		util.AbortResponseUnexpectedError(c)
@@ -44,7 +46,7 @@ func GetUserProfile(c *gin.Context) {
 	id := c.Param("id")
 	profile, err := query.GetUserProfileByID(id)
 
-	if err == query.ErrNotFound || err == query.ErrInvalidID {
+	if err == errors.ErrNotFound || err == errors.ErrInvalidID {
 		util.AbortResponseNotFound(c)
 	} else if err != nil {
 		util.AbortResponseUnexpectedError(c)
@@ -63,9 +65,9 @@ func FollowUser(c *gin.Context) {
 	followUserID := c.Param("id")
 	err := query.FollowUser(user.ID, followUserID)
 
-	if err == query.ErrNotFound {
+	if err == errors.ErrNotFound {
 		util.AbortResponseNotFound(c)
-	} else if err == query.ErrUserCannotFollowThemself {
+	} else if err == errors.ErrUserCannotFollowThemself {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "You cannot follow yourself."})
 	} else if err != nil {
 		util.AbortResponseUnexpectedError(c)
@@ -81,7 +83,7 @@ func IsFollowingUser(c *gin.Context) {
 	followUserID := c.Param("id")
 	isFollowing, err := query.IsUserFollowing(user.ID, followUserID)
 
-	if err == query.ErrInvalidID {
+	if err == errors.ErrInvalidID {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID."})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"data": isFollowing})
@@ -97,7 +99,7 @@ func UnFollowUser(c *gin.Context) {
 	followUserID := c.Param("id")
 	err := query.UnFollowUser(user.ID, followUserID)
 
-	if err == query.ErrNotFound {
+	if err == errors.ErrNotFound {
 		util.AbortResponseNotFound(c)
 	} else if err != nil {
 		util.AbortResponseUnexpectedError(c)
@@ -156,7 +158,7 @@ func CreateUser(c *gin.Context) {
 	if err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "This username is already taken."})
 		return
-	} else if err != query.ErrNotFound {
+	} else if err != errors.ErrNotFound {
 		util.AbortResponseUnexpectedError(c)
 		return
 	}

@@ -22,18 +22,3 @@ type FriendOrFollower struct {
 	User
 	Since time.Time `json:"since"`
 }
-
-// The string value for the enum MUST be the same as the cassandra table for
-// the counter.
-// The counter table MUST have its ID column called "id" and its counter
-// column called "count".
-type CounterTable string
-
-const (
-	FollowersCount       CounterTable = "user_followers_count"
-	FriendsCount         CounterTable = "user_friends_count"
-	ShweetsCount         CounterTable = "user_shweets_count"
-	ShweetLikesCount     CounterTable = "shweet_likes_count"
-	ShweetReshweetsCount CounterTable = "shweet_reshweets_count"
-	ShweetCommentsCount  CounterTable = "shweet_comments_count"
-)

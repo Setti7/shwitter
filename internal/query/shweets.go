@@ -4,8 +4,10 @@ import (
 	"time"
 
 	"github.com/Setti7/shwitter/internal/entity"
+	"github.com/Setti7/shwitter/internal/errors"
 	"github.com/Setti7/shwitter/internal/form"
 	"github.com/Setti7/shwitter/internal/log"
+	"github.com/Setti7/shwitter/internal/query/counter"
 	"github.com/Setti7/shwitter/internal/service"
 	"github.com/gocql/gocql"
 )
@@ -17,17 +19,17 @@ import (
 func GetShweetByID(id string) (shweet *entity.Shweet, err error) {
 	uuid, err := gocql.ParseUUID(id)
 	if err != nil {
-		return shweet, ErrInvalidID
+		return shweet, errors.ErrInvalidID
 	}
 
 	m := map[string]interface{}{}
 	query := "SELECT id, user_id, message, created_at FROM shweets WHERE id=? LIMIT 1"
 	err = service.Cassandra().Query(query, uuid).Consistency(gocql.One).MapScan(m)
 	if err == gocql.ErrNotFound {
-		return shweet, ErrNotFound
+		return shweet, errors.ErrNotFound
 	} else if err != nil {
 		log.LogError("query.GetShweetByID", "Error getting a shweet by its ID", err)
-		return shweet, ErrUnexpected
+		return shweet, errors.ErrUnexpected
 	}
 
 	shweet = &entity.Shweet{
@@ -68,7 +70,7 @@ func GetShweetDetailsByID(userID string, shweetID string) (d *entity.ShweetDetai
 // Returns ErrInvalidID if the ID is empty and ErrUnexpected for any other errors.
 func CreateShweet(userID string, f form.CreateShweetForm) (string, error) {
 	if userID == "" {
-		return "", ErrInvalidID
+		return "", errors.ErrInvalidID
 	}
 
 	uuid, _ := gocql.RandomUUID()
@@ -91,7 +93,7 @@ func CreateShweet(userID string, f form.CreateShweetForm) (string, error) {
 		uuid, userID, f.Message, shweet.CreatedAt).Exec()
 	if err != nil {
 		log.LogError("query.CreateShweet", "Error creating shweet", err)
-		return "", ErrUnexpected
+		return "", errors.ErrUnexpected
 	}
 
 	// Insert shweet into current user timeline.
@@ -116,7 +118,7 @@ func CreateShweet(userID string, f form.CreateShweetForm) (string, error) {
 	}
 
 	// Increment the user shweets counter
-	err = IncrementCounterValue(userID, entity.ShweetsCount, 1)
+	err = counter.UserShweetsCounter.Increment(userID, 1)
 	if err != nil {
 		return "", err
 	}
@@ -138,7 +140,7 @@ func EnrichShweetsWithUserInfo(shweets []*entity.Shweet) error {
 	users, err := EnrichUsers(userIDs)
 	if err != nil {
 		log.LogError("query.EnrichShweetsWithUserInfo", "Could not enrich shweets", err)
-		return ErrUnexpected
+		return errors.ErrUnexpected
 	}
 
 	for _, shweet := range shweets {
@@ -162,19 +164,19 @@ func EnrichShweetsDetails(userID string, shweets []*entity.Shweet) ([]*entity.Sh
 	}
 
 	// Enriching with like counter
-	shweetDetails, err := EnrichShweetCounter(shweetDetails, entity.ShweetLikesCount)
+	shweetDetails, err := counter.ShweetLikesCounter.EnrichShweetsCounters(shweetDetails)
 	if err != nil {
 		return nil, err
 	}
 
 	// Enriching with comment counter
-	shweetDetails, err = EnrichShweetCounter(shweetDetails, entity.ShweetCommentsCount)
+	shweetDetails, err = counter.ShweetCommentsCounter.EnrichShweetsCounters(shweetDetails)
 	if err != nil {
 		return nil, err
 	}
 
 	// Enriching with reshweets counter
-	shweetDetails, err = EnrichShweetCounter(shweetDetails, entity.ShweetReshweetsCount)
+	shweetDetails, err = counter.ShweetReshweetsCounter.EnrichShweetsCounters(shweetDetails)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +213,7 @@ func ListShweets() ([]*entity.Shweet, error) {
 	err := iterable.Close()
 	if err != nil {
 		log.LogError("query.ListShweets", "Error listing all shweets", err)
-		return nil, ErrUnexpected
+		return nil, errors.ErrUnexpected
 	}
 
 	err = EnrichShweetsWithUserInfo(shweets)
@@ -228,17 +230,17 @@ func ListShweets() ([]*entity.Shweet, error) {
 // for any other errors.
 func LikeOrUnlikeShweet(userID string, shweetID string) error {
 	if userID == "" || shweetID == "" {
-		return ErrInvalidID
+		return errors.ErrInvalidID
 	}
 
 	_, err := GetShweetByID(shweetID)
 	if err != nil {
-		return ErrNotFound
+		return errors.ErrNotFound
 	}
 
 	isLiked, err := IsShweetLiked(userID, shweetID)
 	if err != nil {
-		return ErrNotFound
+		return errors.ErrNotFound
 	}
 
 	// Add/remove this shweet to the list of shweets liked by this user
@@ -254,7 +256,7 @@ func LikeOrUnlikeShweet(userID string, shweetID string) error {
 	if err != nil {
 		log.LogError("query.likeOrDislikeShweet",
 			"Could not add/remove shweet to list of user liked shweets", err)
-		return ErrUnexpected
+		return errors.ErrUnexpected
 	}
 
 	// Add/remove this user to the list of users that liked this shweet
@@ -270,7 +272,7 @@ func LikeOrUnlikeShweet(userID string, shweetID string) error {
 	if err != nil {
 		log.LogError("query.likeOrDislikeShweet",
 			"Could not add/remove user to list of users that liked shweet", err)
-		return ErrUnexpected
+		return errors.ErrUnexpected
 	}
 
 	// Increment/decrement the liked counter
@@ -281,7 +283,7 @@ func LikeOrUnlikeShweet(userID string, shweetID string) error {
 		inc = 1
 	}
 
-	err = IncrementCounterValue(shweetID, entity.ShweetLikesCount, inc)
+	err = counter.ShweetLikesCounter.Increment(shweetID, inc)
 	if err != nil {
 		return err
 	}
@@ -294,7 +296,7 @@ func LikeOrUnlikeShweet(userID string, shweetID string) error {
 // Returns ErrInvalidID if any of the IDs are empty.
 func IsShweetLiked(userID string, shweetID string) (bool, error) {
 	if userID == "" || shweetID == "" {
-		return false, ErrInvalidID
+		return false, errors.ErrInvalidID
 	}
 
 	q := "SELECT user_id FROM user_liked_shweets WHERE user_id = ? AND shweet_id = ?"
@@ -343,7 +345,7 @@ func EnrichShweetStatus(userID string, shweets []*entity.ShweetDetails) ([]*enti
 	err := iterable.Close()
 	if err != nil {
 		log.LogError("query.EnrichShweetIsLiked", "Could not enrich shweet liked status", err)
-		return nil, ErrUnexpected
+		return nil, errors.ErrUnexpected
 	}
 
 	// TODO: enrich with isReshweeted status

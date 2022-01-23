@@ -4,8 +4,10 @@ import (
 	"time"
 
 	"github.com/Setti7/shwitter/internal/entity"
+	"github.com/Setti7/shwitter/internal/errors"
 	"github.com/Setti7/shwitter/internal/form"
 	"github.com/Setti7/shwitter/internal/log"
+	"github.com/Setti7/shwitter/internal/query/counter"
 	"github.com/Setti7/shwitter/internal/service"
 	"github.com/gocql/gocql"
 	"golang.org/x/crypto/bcrypt"
@@ -17,7 +19,7 @@ import (
 // errors occurred.
 func GetUserByID(id string) (user entity.User, err error) {
 	if id == "" {
-		return user, ErrInvalidID
+		return user, errors.ErrInvalidID
 	}
 
 	query := "SELECT id, username, email, name, bio, joined_at FROM users WHERE id=? LIMIT 1"
@@ -25,10 +27,10 @@ func GetUserByID(id string) (user entity.User, err error) {
 	err = service.Cassandra().Query(query, id).MapScan(m)
 
 	if err == gocql.ErrNotFound {
-		return user, ErrNotFound
+		return user, errors.ErrNotFound
 	} else if err != nil {
 		log.LogError("query.GetUserByID", "Could not get user by ID", err)
-		return user, ErrUnexpected
+		return user, errors.ErrUnexpected
 	}
 
 	user.ID = m["id"].(gocql.UUID).String()
@@ -51,17 +53,17 @@ func GetUserProfileByID(id string) (p entity.UserProfile, err error) {
 		return p, err
 	}
 
-	followersCount, err := GetCounterValue(id, entity.FollowersCount)
+	followersCount, err := counter.FollowersCounter.GetValue(id)
 	if err != nil {
 		return p, err
 	}
 
-	friendsCount, err := GetCounterValue(id, entity.FriendsCount)
+	friendsCount, err := counter.FriendsCounter.GetValue(id)
 	if err != nil {
 		return p, err
 	}
 
-	shweetsCount, err := GetCounterValue(id, entity.ShweetsCount)
+	shweetsCount, err := counter.UserShweetsCounter.GetValue(id)
 	if err != nil {
 		return p, err
 	}
@@ -99,7 +101,7 @@ func EnrichUsers(ids []string) (map[string]*entity.User, error) {
 		err := iterable.Close()
 		if err != nil {
 			log.LogError("query.EnrichUsers", "Could not enrich users", err)
-			return nil, ErrUnexpected
+			return nil, errors.ErrUnexpected
 		}
 	}
 
@@ -115,7 +117,7 @@ func CreateNewUserWithCredentials(f form.CreateUserForm) (user entity.User, err 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(f.Password), 10)
 	if err != nil {
 		log.LogError("query.CreateNewUserWithCredentials", "Error while generating user password", err)
-		return user, ErrUnexpected
+		return user, errors.ErrUnexpected
 	}
 
 	user.ID = uuid.String()
@@ -134,7 +136,7 @@ func CreateNewUserWithCredentials(f form.CreateUserForm) (user entity.User, err 
 	err = service.Cassandra().ExecuteBatch(batch)
 	if err != nil {
 		log.LogError("query.CreateNewUserWithCredentials", "Error while executing batch operation", err)
-		return user, ErrUnexpected
+		return user, errors.ErrUnexpected
 	}
 
 	return user, err
@@ -142,7 +144,7 @@ func CreateNewUserWithCredentials(f form.CreateUserForm) (user entity.User, err 
 
 func listFriendsOrFollowers(userID string, useFriendsTable bool, p *form.Paginator) ([]*entity.FriendOrFollower, error) {
 	if userID == "" {
-		return nil, ErrInvalidID
+		return nil, errors.ErrInvalidID
 	}
 
 	var q string
@@ -177,7 +179,7 @@ func listFriendsOrFollowers(userID string, useFriendsTable bool, p *form.Paginat
 	err := iterable.Close()
 	if err != nil {
 		log.LogError("query.listFriendsOrFollowers", "Could not list friends/followers for user", err)
-		return nil, ErrUnexpected
+		return nil, errors.ErrUnexpected
 	}
 
 	var friendOrFollowerIDs []string
@@ -189,7 +191,7 @@ func listFriendsOrFollowers(userID string, useFriendsTable bool, p *form.Paginat
 	users, err := EnrichUsers(friendOrFollowerIDs)
 	if err != nil {
 		// We don't need to log error here because its already logged inside EnrichUsers
-		return nil, ErrUnexpected
+		return nil, errors.ErrUnexpected
 	}
 
 	for _, f := range friendOrFollowers {
@@ -201,7 +203,7 @@ func listFriendsOrFollowers(userID string, useFriendsTable bool, p *form.Paginat
 
 func GetAllUserFollowersIDs(userID string) ([]string, error) {
 	if userID == "" {
-		return nil, ErrInvalidID
+		return nil, errors.ErrInvalidID
 	}
 
 	q := "SELECT follower_id FROM followers WHERE user_id = ?"
@@ -215,7 +217,7 @@ func GetAllUserFollowersIDs(userID string) ([]string, error) {
 
 		if err != nil {
 			log.LogError("query.GetAllUserFollowersIDs", "Error while getting all followers for user", err)
-			return nil, ErrUnexpected
+			return nil, errors.ErrUnexpected
 		}
 
 		followers = append(followers, id.String())
@@ -243,7 +245,7 @@ func ListFriends(userID string, p *form.Paginator) ([]*entity.FriendOrFollower, 
 // Returns ErrInvalidID if any of the IDs are empty.
 func IsUserFollowing(userID string, following string) (bool, error) {
 	if userID == "" || following == "" {
-		return false, ErrInvalidID
+		return false, errors.ErrInvalidID
 	}
 
 	q := "SELECT follower_id FROM followers WHERE user_id = ? AND follower_id = ?"
@@ -261,12 +263,12 @@ func IsUserFollowing(userID string, following string) (bool, error) {
 // Returns ErrNotFound if otherUserID was not found and ErrUnexpected on any other errors.
 func FollowUser(userID string, otherUserID string) error {
 	if userID == otherUserID {
-		return ErrUserCannotFollowThemself
+		return errors.ErrUserCannotFollowThemself
 	}
 
 	_, err := GetUserByID(otherUserID)
 	if err != nil {
-		return ErrNotFound
+		return errors.ErrNotFound
 	}
 
 	batch := service.Cassandra().NewBatch(gocql.LoggedBatch)
@@ -282,15 +284,15 @@ func FollowUser(userID string, otherUserID string) error {
 
 	err = service.Cassandra().ExecuteBatch(batch)
 	if err != nil {
-		return ErrUnexpected
+		return errors.ErrUnexpected
 	}
 
 	// Increment the user friends counter and the otherUser followers counter
-	err = IncrementCounterValue(otherUserID, entity.FollowersCount, 1)
+	err = counter.FollowersCounter.Increment(otherUserID, 1)
 	if err != nil {
 		return err
 	}
-	err = IncrementCounterValue(userID, entity.FriendsCount, 1)
+	err = counter.FriendsCounter.Increment(userID, 1)
 	if err != nil {
 		return err
 	}
@@ -304,7 +306,7 @@ func FollowUser(userID string, otherUserID string) error {
 func UnFollowUser(userID string, otherUserID string) error {
 	_, err := GetUserByID(otherUserID)
 	if err != nil {
-		return ErrNotFound
+		return errors.ErrNotFound
 	}
 
 	batch := service.Cassandra().NewBatch(gocql.LoggedBatch)
@@ -317,15 +319,15 @@ func UnFollowUser(userID string, otherUserID string) error {
 
 	err = service.Cassandra().ExecuteBatch(batch)
 	if err != nil {
-		return ErrUnexpected
+		return errors.ErrUnexpected
 	}
 
 	// Decrement the user friends counter and the otherUser followers counter
-	err = IncrementCounterValue(otherUserID, entity.FollowersCount, -1)
+	err = counter.FollowersCounter.Increment(otherUserID, -1)
 	if err != nil {
 		return err
 	}
-	err = IncrementCounterValue(userID, entity.FriendsCount, -1)
+	err = counter.FriendsCounter.Increment(userID, -1)
 	if err != nil {
 		return err
 	}
@@ -356,7 +358,7 @@ func ListUsers() (users []*entity.User, err error) {
 	err = iterable.Close()
 	if err != nil {
 		log.LogError("query.ListUsers", "Could not list all users", err)
-		return nil, ErrUnexpected
+		return nil, errors.ErrUnexpected
 	}
 
 	return users, nil
