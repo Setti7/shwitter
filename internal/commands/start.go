@@ -53,9 +53,8 @@ func startAction(ctx *cli.Context) error {
 	r.POST("/users", api.CreateUser)
 	r.GET("/users/me", api.GetCurrentUser)
 
-	r.POST("/users/:id/follow", api.FollowUser)
 	r.GET("/users/:id/follow", api.IsFollowingUser)
-	r.POST("/users/:id/unfollow", api.UnFollowUser)
+	r.POST("/users/:id/follow", api.FollowOrUnfollowUser)
 	r.GET("/users/:id/followers", api.ListFriendsOrFollowers(false))
 	r.GET("/users/:id/friends", api.ListFriendsOrFollowers(true))
 

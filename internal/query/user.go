@@ -258,11 +258,16 @@ func IsUserFollowing(userID string, following string) (bool, error) {
 	}
 }
 
-// Make a user follow another user. Make sure userID is a valid user.
+// Make a user follow/unfollow another user. Make sure userID is a valid user.
 //
-// Returns ErrNotFound if otherUserID was not found and ErrUnexpected on any other errors.
-func FollowUser(userID string, otherUserID string) error {
-	if userID == otherUserID {
+// Returns ErrInvalidID if any userID is empty, ErrNotFound if otherUserID was
+// not found and ErrUnexpected on any other errors.
+func FollowOrUnfollowUser(currentUserID string, otherUserID string) error {
+	if currentUserID == "" || otherUserID == "" {
+		return errors.ErrInvalidID
+	}
+
+	if currentUserID == otherUserID {
 		return errors.ErrUserCannotFollowThemself
 	}
 
@@ -271,63 +276,54 @@ func FollowUser(userID string, otherUserID string) error {
 		return errors.ErrNotFound
 	}
 
+	isFollowing, err := IsUserFollowing(currentUserID, otherUserID)
+	if err != nil {
+		return errors.ErrUnexpected
+	}
+
 	batch := service.Cassandra().NewBatch(gocql.LoggedBatch)
 
-	// From the userID perspective: userID (me) is following otherUserID
-	batch.Query(
-		"INSERT INTO friends (user_id, friend_id, since) VALUES (?, ?, ?)",
-		userID, otherUserID, time.Now())
+	if isFollowing {
+		// From the userID perspective: userID (me) is following otherUserID
+		batch.Query(
+			"DELETE FROM friends WHERE user_id = ? AND friend_id = ?",
+			currentUserID, otherUserID)
 
-	// From the otherUserID perspective: otherUserID (me) is being followed by userID
-	batch.Query("INSERT INTO followers (user_id, follower_id, since) VALUES (?, ?, ?)",
-		otherUserID, userID, time.Now())
+		// From the otherUserID perspective: otherUserID (me) is being followed by userID
+		batch.Query("DELETE FROM followers WHERE user_id = ? AND follower_id = ?",
+			otherUserID, currentUserID)
+	} else {
+		// From the userID perspective: userID (me) is following otherUserID
+		batch.Query(
+			"INSERT INTO friends (user_id, friend_id, since) VALUES (?, ?, ?)",
+			currentUserID, otherUserID, time.Now())
+
+		// From the otherUserID perspective: otherUserID (me) is being followed by userID
+		batch.Query("INSERT INTO followers (user_id, follower_id, since) VALUES (?, ?, ?)",
+			otherUserID, currentUserID, time.Now())
+	}
 
 	err = service.Cassandra().ExecuteBatch(batch)
 	if err != nil {
 		return errors.ErrUnexpected
+	}
+
+	// If the user is already following, then we will unfollow, which has a
+	// change of -1 to the counters
+	var change int
+
+	if isFollowing {
+		change = -1
+	} else {
+		change = 1
 	}
 
 	// Increment the user friends counter and the otherUser followers counter
-	err = counter.FollowersCounter.Increment(otherUserID, 1)
+	err = counter.FollowersCounter.Increment(otherUserID, change)
 	if err != nil {
 		return err
 	}
-	err = counter.FriendsCounter.Increment(userID, 1)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Make a user unfollow another user. Make sure userID is a valid user.
-//
-// Returns ErrNotFound if otherUserID was not found and ErrUnexpected on any other errors.
-func UnFollowUser(userID string, otherUserID string) error {
-	_, err := GetUserByID(otherUserID)
-	if err != nil {
-		return errors.ErrNotFound
-	}
-
-	batch := service.Cassandra().NewBatch(gocql.LoggedBatch)
-
-	// From the userID perspective: userID (me) is NOT following otherUserID anymore
-	batch.Query("DELETE FROM friends WHERE user_id=? AND friend_id=?", userID, otherUserID)
-
-	// From the otherUserID perspective: otherUserID (me) is NOT being followed by userID anymore
-	batch.Query("DELETE FROM followers WHERE user_id=? AND follower_id=?", otherUserID, userID)
-
-	err = service.Cassandra().ExecuteBatch(batch)
-	if err != nil {
-		return errors.ErrUnexpected
-	}
-
-	// Decrement the user friends counter and the otherUser followers counter
-	err = counter.FollowersCounter.Increment(otherUserID, -1)
-	if err != nil {
-		return err
-	}
-	err = counter.FriendsCounter.Increment(userID, -1)
+	err = counter.FriendsCounter.Increment(currentUserID, change)
 	if err != nil {
 		return err
 	}

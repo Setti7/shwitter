@@ -68,24 +68,11 @@ export const getFriends = async (
   }
 };
 
-export const followUser = async (id: string): Promise<undefined | ApiError> => {
+export const followOrUnfollowUser = async (id: string): Promise<undefined | ApiError> => {
   const api = await apiService.getExecutor();
 
   try {
     await api.post("users/" + id + "/follow");
-    return;
-  } catch (error) {
-    return handleApiError(error) ?? genericApiError;
-  }
-};
-
-export const unFollowUser = async (
-  id: string
-): Promise<undefined | ApiError> => {
-  const api = await apiService.getExecutor();
-
-  try {
-    await api.post("users/" + id + "/unfollow");
     return;
   } catch (error) {
     return handleApiError(error) ?? genericApiError;

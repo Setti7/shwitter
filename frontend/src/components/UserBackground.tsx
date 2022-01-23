@@ -3,7 +3,7 @@ import { FC, useCallback, useContext, useEffect, useState } from "react";
 import { AuthContext } from "../contexts/auth";
 import ApiError from "../models/errors/ApiError";
 import { UserProfile } from "../models/user";
-import { followUser, getIsFollowing, unFollowUser } from "../services/user";
+import { followOrUnfollowUser, getIsFollowing } from "../services/user";
 import ShareIcon from "@mui/icons-material/Share";
 import CloseIcon from "@mui/icons-material/Close";
 import { fabBlackStyle } from "../config/theme";
@@ -37,12 +37,12 @@ const UserBackground: FC<{ userProfile: UserProfile }> = ({ userProfile }) => {
 
   const action = useCallback(async () => {
     if (isFollowing) {
-      await unFollowUser(userProfile.id);
       setIsFollowing(false);
     } else {
-      followUser(userProfile.id);
       setIsFollowing(true);
     }
+
+    await followOrUnfollowUser(userProfile.id);
   }, [userProfile, isFollowing]);
 
   const copyToClipboard = useCallback(async () => {

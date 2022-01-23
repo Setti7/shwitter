@@ -55,15 +55,14 @@ func GetUserProfile(c *gin.Context) {
 	}
 }
 
-
-func FollowUser(c *gin.Context) {
+func FollowOrUnfollowUser(c *gin.Context) {
 	user, ok := middleware.GetUserOrAbort(c)
 	if !ok {
 		return
 	}
 
 	followUserID := c.Param("id")
-	err := query.FollowUser(user.ID, followUserID)
+	err := query.FollowOrUnfollowUser(user.ID, followUserID)
 
 	if err == errors.ErrNotFound {
 		util.AbortResponseNotFound(c)
@@ -87,22 +86,6 @@ func IsFollowingUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID."})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"data": isFollowing})
-	}
-}
-
-func UnFollowUser(c *gin.Context) {
-	user, ok := middleware.GetUserOrAbort(c)
-	if !ok {
-		return
-	}
-
-	followUserID := c.Param("id")
-	err := query.UnFollowUser(user.ID, followUserID)
-
-	if err == errors.ErrNotFound {
-		util.AbortResponseNotFound(c)
-	} else if err != nil {
-		util.AbortResponseUnexpectedError(c)
 	}
 }
 
