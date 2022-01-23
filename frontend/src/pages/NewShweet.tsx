@@ -54,7 +54,7 @@ const NewShweetPage = () => {
         setStatus(result.getFormattedStatus());
       } else {
           // TODO: on success, animate a screen of success and the go to the refreshed home page
-        navigate(HOME_ROUTE);
+        navigate(-1);
       }
 
       setSubmitting(false);
