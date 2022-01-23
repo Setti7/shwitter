@@ -7,21 +7,21 @@ import (
 
 func registerShweetCreationCallbacks() {
 	// Insert shweet into current user timeline.
-	insertIntoTimeLineCallback := func(name string, instance interface{}, args ...interface{}) {
+	insertIntoTimeLineCallback := func(instance interface{}, args ...interface{}) {
 		shweet := instance.(*entity.Shweet)
 		InsertShweetIntoLine(shweet.UserID, shweet, entity.TimeLine)
 	}
 	signal.PostCreate.Connect(entity.Shweet{}, insertIntoTimeLineCallback)
 
 	// Insert shweet into current user userline.
-	insertIntoUserLineCallback := func(name string, instance interface{}, args ...interface{}) {
+	insertIntoUserLineCallback := func(instance interface{}, args ...interface{}) {
 		shweet := instance.(*entity.Shweet)
 		InsertShweetIntoLine(shweet.UserID, shweet, entity.UserLine)
 	}
 	signal.PostCreate.Connect(entity.Shweet{}, insertIntoUserLineCallback)
 
 	// Insert shweet into followers timeline.
-	insertIntoFollowersTimelinesCallback := func(name string, instance interface{}, args ...interface{}) {
+	insertIntoFollowersTimelinesCallback := func(instance interface{}, args ...interface{}) {
 		shweet := instance.(*entity.Shweet)
 		BulkInsertShweetIntoFollowersTimelines(shweet.UserID, shweet)
 	}

@@ -14,15 +14,12 @@ type signalConfig struct {
 	callbacks []signalCallback
 }
 
+// Map of the sender name (entity struct name) and its signalConfig, which contains the callbacks
 var signalMapping = map[string]signalConfig{}
 
-type signalCallback func(name string, instance interface{}, args ...interface{})
+type signalCallback func(instance interface{}, args ...interface{})
 
-type Signal interface {
-	Connect(s signal, sender interface{}, f signalCallback)
-	Emit(s signal, sender interface{}, instance interface{})
-}
-
+// Connect a callback to a signal sender.
 func (s signal) Connect(sender interface{}, f signalCallback) {
 	name := reflect.TypeOf(sender).String()
 
@@ -31,12 +28,21 @@ func (s signal) Connect(sender interface{}, f signalCallback) {
 	signalMapping[name] = signalConfig{sender: sender, callbacks: callbacks}
 }
 
+// Emit a signal, calling all of its registered callbacks.
 func (s signal) Emit(sender interface{}, instance interface{}, args ...interface{}) {
 	name := reflect.TypeOf(sender).String()
 	c := signalMapping[name]
 
 	// Call all callbacks asynchronously
 	for _, f := range c.callbacks {
-		go f(name, instance, args)
+		go f(instance, args)
 	}
+}
+
+// Clear the signal config of the given sender.
+//
+// Useful for testing: disconnect all signals for easier unit testing.
+func Clear(s signal, sender interface{}) {
+	name := reflect.TypeOf(sender).String()
+	signalMapping[name] = signalConfig{}
 }
