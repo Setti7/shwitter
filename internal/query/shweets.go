@@ -90,7 +90,7 @@ func CreateShweet(userID string, f form.CreateShweetForm) (string, error) {
 		CreatedAt: time.Now(),
 	}
 	err := service.Cassandra().Query("INSERT INTO shweets (id, user_id, message, created_at) VALUES (?, ?, ?, ?)",
-		uuid, userID, f.Message, shweet.CreatedAt).Exec()
+		uuid, shweet.UserID, f.Message, shweet.CreatedAt).Exec()
 	if err != nil {
 		log.LogError("query.CreateShweet", "Error creating shweet", err)
 		return "", errors.ErrUnexpected
@@ -98,27 +98,27 @@ func CreateShweet(userID string, f form.CreateShweetForm) (string, error) {
 
 	// Insert shweet into current user timeline.
 	// This is done synchronously, so we can verify it worked properly.
-	err = InsertShweetIntoLine(userID, shweet, entity.TimeLine)
+	err = InsertShweetIntoLine(shweet.UserID, shweet, entity.TimeLine)
 	if err != nil {
 		return "", err
 	}
 
 	// Insert shweet into current user userline.
 	// This is done synchronously, so we can verify it worked properly.
-	err = InsertShweetIntoLine(userID, shweet, entity.UserLine)
+	err = InsertShweetIntoLine(shweet.UserID, shweet, entity.UserLine)
 	if err != nil {
 		return "", err
 	}
 
 	// Insert shweet into followers timeline.
 	// This is done asynchronously for performance.
-	err = BulkInsertShweetIntoFollowersTimelines(userID, shweet)
+	err = BulkInsertShweetIntoFollowersTimelines(shweet.UserID, shweet)
 	if err != nil {
 		return "", err
 	}
 
 	// Increment the user shweets counter
-	err = counter.UserShweetsCounter.Increment(userID, 1)
+	err = counter.UserShweetsCounter.Increment(shweet.UserID, 1)
 	if err != nil {
 		return "", err
 	}
