@@ -5,10 +5,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Setti7/shwitter/internal/api"
 	"github.com/Setti7/shwitter/internal/config"
+	"github.com/Setti7/shwitter/internal/follow"
 	"github.com/Setti7/shwitter/internal/middleware"
 	"github.com/Setti7/shwitter/internal/service"
+	"github.com/Setti7/shwitter/internal/session"
+	"github.com/Setti7/shwitter/internal/shweets"
+	"github.com/Setti7/shwitter/internal/users"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/urfave/cli/v2"
@@ -29,6 +32,18 @@ func startAction(ctx *cli.Context) error {
 	service.Init()
 	defer service.CleanUp()
 
+	usersRepo := users.NewCassandraRepository(service.Cassandra())
+	usersService := users.NewService(usersRepo, service.Lock())
+
+	sessRepo := session.NewCassandraRepository(service.Cassandra())
+	sessService := session.NewService(sessRepo, usersRepo)
+
+	followRepo := follow.NewCassandraRepository(service.Cassandra(), usersRepo)
+	followService := follow.NewService(followRepo)
+
+	shweetRepo := shweets.NewCassandraRepository(service.Cassandra(), usersRepo)
+	shweetService  := shweets.NewService(shweetRepo)
+
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
@@ -37,7 +52,8 @@ func startAction(ctx *cli.Context) error {
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
-	r.Use(middleware.SessionMiddleware())
+	r.Use(middleware.SessionMiddleware(sessService))
+	r.Use(middleware.UserMiddleware(usersService))
 
 	r.GET("/healthz", heartbeat)
 

@@ -1,4 +1,6 @@
-package form
+package users
+
+import "errors"
 
 type CreateUserForm struct {
 	Username string `json:"username" binding:"required,alphanumunicode"`
@@ -7,11 +9,5 @@ type CreateUserForm struct {
 	Email    string `json:"email" binding:"required,email"`
 }
 
-type LoginForm struct {
-	Username string `json:"username" binding:"required,alphanumunicode"`
-	Password string `json:"password" binding:"required"`
-}
-
-func (f *LoginForm) HasCredentials() bool {
-	return f.Username != "" && f.Password != ""
-}
+var ErrTryAgainLater = errors.New("try again")
+var ErrUsernameTaken = errors.New("username taken")

@@ -1,6 +1,9 @@
-package entity
+package session
 
 import (
+	"crypto/rand"
+	"fmt"
+	"log"
 	"time"
 )
 
@@ -18,3 +21,14 @@ func (s *Session) IsExpired() bool {
 func (s *Session) CreateToken() {
 	s.Token = s.UserID + ":" + s.ID
 }
+
+func NewID() string {
+	b := make([]byte, 24)
+
+	if _, err := rand.Read(b); err != nil {
+		log.Fatal(err)
+	}
+
+	return fmt.Sprintf("%x", b)
+}
+

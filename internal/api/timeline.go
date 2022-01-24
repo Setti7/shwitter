@@ -12,7 +12,7 @@ import (
 
 // TODO: paginate
 func GetTimelineForCurrentUser(c *gin.Context) {
-	user, ok := middleware.GetUserOrAbort(c)
+	user, ok := middleware.GetUserFromCtxOrAbort(c)
 	if !ok {
 		return
 	}
@@ -29,7 +29,7 @@ func GetTimelineForCurrentUser(c *gin.Context) {
 // TODO: paginate
 func GetUserLine(c *gin.Context) {
 	currentUserID := ""
-	currentUser, ok := middleware.GetUser(c)
+	currentUser, ok := middleware.GetUserFromCtx(c)
 	if ok {
 		currentUserID = currentUser.ID
 	}

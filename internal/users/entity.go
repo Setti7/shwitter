@@ -1,6 +1,10 @@
-package entity
+package users
 
-import "time"
+import (
+	"time"
+
+	"golang.org/x/crypto/bcrypt"
+)
 
 type User struct {
 	ID       string    `json:"id"`
@@ -18,7 +22,13 @@ type UserProfile struct {
 	ShweetsCount   int `json:"shweets_count"`
 }
 
-type FriendOrFollower struct {
-	User
-	Since time.Time `json:"since"`
+type Credentials struct {
+	Username       string `json:"username"`
+	Password       string `json:"password"`
+	HashedPassword string `json:"-"`
+}
+
+func (c *Credentials) Authenticate(password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(c.HashedPassword), []byte(password))
+	return err == nil
 }
