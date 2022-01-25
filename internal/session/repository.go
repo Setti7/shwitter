@@ -8,6 +8,7 @@ type Reader interface {
 type Writer interface {
 	CreateForUser(userID string) (*Session, error)
 	Delete(userID string, sessID string) (error)
+	DeleteAllForUser(userID string) (error)
 }
 
 type Repository interface {

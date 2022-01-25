@@ -23,7 +23,7 @@ func SessionMiddleware(svc session.Service) gin.HandlerFunc {
 			}
 
 			userID, sessID := tokenParts[0], tokenParts[1]
-			sess, err := svc.GetSessionRepo().Find(userID, sessID)
+			sess, err := svc.Find(userID, sessID)
 
 			if err != nil {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "This session was not found."})

@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func getCurrentUser(svc users.Service) gin.HandlerFunc {
+func getCurrentUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		user, ok := middleware.GetUserFromCtxOrAbort(c)
 		if !ok {

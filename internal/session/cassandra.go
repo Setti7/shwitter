@@ -124,3 +124,21 @@ func (r *repo) Delete(userID string, sessID string) (err error) {
 
 	return nil
 }
+
+// Delete all sessions for a given user.
+//
+// Returns ErrInvalidID if the userID is empty and ErrUnexpected for any other errors.
+func (r *repo) DeleteAllForUser(userID string) (err error) {
+	if userID == "" {
+		return errors.ErrInvalidID
+	}
+
+	query := "DELETE FROM sessions WHERE user_id = ?"
+	err = service.Cassandra().Query(query, userID).Exec()
+	if err != nil {
+		log.LogError("query.DeleteAllForUser", "Could not delete sessions for user", err)
+		return errors.ErrUnexpected
+	}
+
+	return nil
+}

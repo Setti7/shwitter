@@ -7,7 +7,7 @@ import (
 )
 
 type User struct {
-	ID       string    `json:"id"`
+	ID       string    `json:"id"` // TODO use custom type UserID
 	Username string    `json:"username"`
 	Name     string    `json:"name"`
 	Email    string    `json:"email,omitempty"`

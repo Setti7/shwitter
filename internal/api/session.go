@@ -38,7 +38,7 @@ func listUserSessions(svc session.Service) gin.HandlerFunc {
 			return
 		}
 
-		sessions, err := svc.GetSessionRepo().ListForUser(user.ID)
+		sessions, err := svc.List(user.ID)
 		if err != nil {
 			util.AbortResponseUnexpectedError(c)
 		} else {
@@ -55,7 +55,23 @@ func deleteSession(svc session.Service) gin.HandlerFunc {
 		}
 
 		sessID := c.Param("id")
-		err := svc.GetSessionRepo().Delete(user.ID, sessID)
+		err := svc.SignOut(user.ID, sessID)
+		if err == errors.ErrInvalidID {
+			util.AbortResponseNotFound(c)
+		} else if err != nil {
+			util.AbortResponseUnexpectedError(c)
+		}
+	}
+}
+
+func deleteAllUserSessions(svc session.Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user, ok := middleware.GetUserFromCtxOrAbort(c)
+		if !ok {
+			return
+		}
+
+		err := svc.SignOutFromAll(user.ID)
 		if err == errors.ErrInvalidID {
 			util.AbortResponseNotFound(c)
 		} else if err != nil {
