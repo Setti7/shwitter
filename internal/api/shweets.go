@@ -25,7 +25,7 @@ func CreateShweet(svc shweets.Service) gin.HandlerFunc {
 			return
 		}
 
-		shweetId, err := svc.GetShweetRepo().Create(&f, user.ID)
+		shweetId, err := svc.Create(&f, user.ID)
 		if err != nil {
 			util.AbortResponseUnexpectedError(c)
 		} else {
@@ -43,7 +43,7 @@ func GetShweet(svc shweets.Service) gin.HandlerFunc {
 			userID = user.ID
 		}
 
-		shweet, err := svc.GetShweetRepo().FindWithDetail(c.Param("id"), userID)
+		shweet, err := svc.FindWithDetail(c.Param("id"), userID)
 
 		if err == errors.ErrNotFound || err == errors.ErrInvalidID {
 			util.AbortResponseNotFound(c)
@@ -64,7 +64,7 @@ func LikeOrUnlikeShweet(svc shweets.Service) gin.HandlerFunc {
 			return
 		}
 
-		err := svc.GetShweetRepo().LikeOrUnlike(c.Param("id"), user.ID)
+		err := svc.LikeOrUnlike(c.Param("id"), user.ID)
 
 		if err == errors.ErrNotFound {
 			util.AbortResponseNotFound(c)

@@ -1,17 +1,27 @@
 package shweets
 
 type Service interface {
-	GetShweetRepo() Repository
+	FindWithDetail(ID string, userID string) (*ShweetDetail, error)
+	Create(f *CreateShweetForm, userID string) (string, error)
+	LikeOrUnlike(ID string, userID string) error
 }
 
 type svc struct {
-	shweetRepo Repository
+	repo Repository
 }
 
-func NewService(s Repository) Service {
-	return &svc{shweetRepo: s}
+func NewService(r Repository) Service {
+	return &svc{repo: r}
 }
 
-func (s *svc) GetShweetRepo() Repository {
-	return s.shweetRepo
+func (s *svc) FindWithDetail(ID string, userID string) (*ShweetDetail, error) {
+	return s.repo.FindWithDetail(ID, userID)
+}
+
+func (s *svc) Create(f *CreateShweetForm, userID string) (string, error) {
+	return s.repo.Create(f, userID)
+}
+
+func (s *svc) LikeOrUnlike(ID string, userID string) error {
+	return s.repo.LikeOrUnlike(ID, userID)
 }
