@@ -6,8 +6,6 @@ import (
 	"github.com/Setti7/shwitter/internal/errors"
 	"github.com/Setti7/shwitter/internal/form"
 	"github.com/Setti7/shwitter/internal/log"
-	"github.com/Setti7/shwitter/internal/query/counter"
-	"github.com/Setti7/shwitter/internal/service"
 	"github.com/Setti7/shwitter/internal/users"
 	"github.com/gocql/gocql"
 )
@@ -33,7 +31,7 @@ func (r *repo) listFriendsOrFollowers(userID string, useFriendsTable bool, p *fo
 		q = "SELECT follower_id, since FROM followers WHERE user_id = ?"
 	}
 
-	iterable := p.PaginateQuery(service.Cassandra().Query(q, userID)).Iter()
+	iterable := p.PaginateQuery(r.sess.Query(q, userID)).Iter()
 	p.SetResults(iterable)
 	friendOrFollowers := make([]*FriendOrFollower, 0, iterable.NumRows())
 
@@ -104,7 +102,7 @@ func (r *repo) IsFollowing(userID string, following string) (bool, error) {
 	}
 
 	q := "SELECT follower_id FROM followers WHERE user_id = ? AND follower_id = ?"
-	iterable := service.Cassandra().Query(q, following, userID).Iter()
+	iterable := r.sess.Query(q, following, userID).Iter()
 
 	if iterable.NumRows() > 0 {
 		return true, nil
@@ -117,7 +115,7 @@ func (r *repo) IsFollowing(userID string, following string) (bool, error) {
 //
 // Returns ErrInvalidID if any userID is empty, ErrNotFound if otherUserID was
 // not found and ErrUnexpected on any other errors.
-func (r *repo)FollowOrUnfollowUser(currentUserID string, otherUserID string) error {
+func (r *repo) FollowOrUnfollowUser(currentUserID string, otherUserID string) error {
 	if currentUserID == "" || otherUserID == "" {
 		return errors.ErrInvalidID
 	}
@@ -136,7 +134,7 @@ func (r *repo)FollowOrUnfollowUser(currentUserID string, otherUserID string) err
 		return errors.ErrUnexpected
 	}
 
-	batch := service.Cassandra().NewBatch(gocql.LoggedBatch)
+	batch := r.sess.NewBatch(gocql.LoggedBatch)
 
 	if !isFollowing {
 		// From the userID perspective: userID (me) is following otherUserID
@@ -158,7 +156,7 @@ func (r *repo)FollowOrUnfollowUser(currentUserID string, otherUserID string) err
 			otherUserID, currentUserID)
 	}
 
-	err = service.Cassandra().ExecuteBatch(batch)
+	err = r.sess.ExecuteBatch(batch)
 	if err != nil {
 		log.LogError("query.FollowOrUnfollowUser", "Could not follow or unfollow user", err)
 		return errors.ErrUnexpected
@@ -175,11 +173,11 @@ func (r *repo)FollowOrUnfollowUser(currentUserID string, otherUserID string) err
 	}
 
 	// Increment the user friends counter and the otherUser followers counter
-	err = counter.FollowersCounter.Increment(otherUserID, change)
+	err = r.usersRepo.IncrementFollowers(otherUserID, change)
 	if err != nil {
 		return err
 	}
-	err = counter.FriendsCounter.Increment(currentUserID, change)
+	err = r.usersRepo.IncrementFriends(currentUserID, change)
 	if err != nil {
 		return err
 	}

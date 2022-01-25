@@ -1,12 +1,11 @@
 package users
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/Setti7/shwitter/internal/errors"
 	"github.com/Setti7/shwitter/internal/log"
-	"github.com/Setti7/shwitter/internal/query/counter"
-	"github.com/Setti7/shwitter/internal/service"
 	"github.com/gocql/gocql"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -30,7 +29,7 @@ func (r *repo) Find(id string) (*User, error) {
 
 	query := "SELECT id, username, email, name, bio, joined_at FROM users WHERE id=? LIMIT 1"
 	m := map[string]interface{}{}
-	err := service.Cassandra().Query(query, id).MapScan(m)
+	err := r.sess.Query(query, id).MapScan(m)
 
 	if err == gocql.ErrNotFound {
 		return nil, errors.ErrNotFound
@@ -61,29 +60,7 @@ func (r *repo) FindProfile(id string) (*UserProfile, error) {
 		return nil, err
 	}
 
-	followersCount, err := counter.FollowersCounter.GetValue(id)
-	if err != nil {
-		return nil, err
-	}
-
-	friendsCount, err := counter.FriendsCounter.GetValue(id)
-	if err != nil {
-		return nil, err
-	}
-
-	shweetsCount, err := counter.UserShweetsCounter.GetValue(id)
-	if err != nil {
-		return nil, err
-	}
-
-	p := &UserProfile{
-		FollowersCount: followersCount,
-		FriendsCount:   friendsCount,
-		ShweetsCount:   shweetsCount,
-		User:           *user,
-	}
-
-	return p, err
+	return r.enrichCounters(user)
 }
 
 // Enrich a list of userIDs
@@ -94,7 +71,7 @@ func (r *repo) EnrichUsers(ids []string) (map[string]*User, error) {
 
 	if len(ids) > 0 {
 		m := map[string]interface{}{}
-		iterable := service.Cassandra().Query("SELECT id, username, name, bio FROM users WHERE id IN ?", ids).Iter()
+		iterable := r.sess.Query("SELECT id, username, name, bio FROM users WHERE id IN ?", ids).Iter()
 		for iterable.MapScan(m) {
 			userID := m["id"].(gocql.UUID).String()
 			userMap[userID] = &User{
@@ -136,13 +113,13 @@ func (r *repo) CreateUser(f *CreateUserForm) (*User, error) {
 		JoinedAt: time.Now(),
 	}
 
-	batch := service.Cassandra().NewBatch(gocql.LoggedBatch)
+	batch := r.sess.NewBatch(gocql.LoggedBatch)
 	batch.Query("INSERT INTO credentials (username, password, user_id) VALUES (?, ?, ?)",
 		f.Username, hashedPassword, uuid)
 	batch.Query(
 		"INSERT INTO users (id, username, name, email, joined_at) VALUES (?, ?, ?, ?, ?)",
 		user.ID, user.Username, user.Name, user.Email, user.JoinedAt)
-	err = service.Cassandra().ExecuteBatch(batch)
+	err = r.sess.ExecuteBatch(batch)
 
 	if err != nil {
 		log.LogError("query.CreateNewUserWithCredentials", "Error while executing batch operation", err)
@@ -159,7 +136,7 @@ func (r *repo) FindCredentialsByUsername(username string) (string, *Credentials,
 	query := "SELECT username, user_id, password FROM credentials WHERE username=? LIMIT 1"
 	m := map[string]interface{}{}
 
-	err := service.Cassandra().Query(query, username).MapScan(m)
+	err := r.sess.Query(query, username).MapScan(m)
 	if err == gocql.ErrNotFound {
 		return "", nil, errors.ErrNotFound
 	} else if err != nil {
@@ -174,4 +151,70 @@ func (r *repo) FindCredentialsByUsername(username string) (string, *Credentials,
 	}
 
 	return id, creds, nil
+}
+
+func (r *repo) enrichCounters(u *User) (*UserProfile, error) {
+	m := map[string]interface{}{}
+	err := r.sess.Query("SELECT followers, friends, shweets FROM user_counters WHERE id = ?", u.ID).MapScan(m)
+
+	var followers int
+	var friends int
+	var shweets int
+
+	// If it doesn't have a row in this table, it's because all of its counters is 0.
+	if err == gocql.ErrNotFound {
+		followers = 0
+		friends = 0
+		shweets = 0
+	} else if err != nil {
+		log.LogError("users.enrichCounters", "Could not enrich user counters", err)
+		return nil, errors.ErrUnexpected
+	} else {
+		followers = m["followers"].(int)
+		friends = m["friends"].(int)
+		shweets = m["shweets"].(int)
+	}
+
+	return &UserProfile{
+		User:           *u,
+		FollowersCount: followers,
+		FriendsCount:   friends,
+		ShweetsCount:   shweets,
+	}, nil
+}
+
+func (r *repo) IncrementFollowers(ID string, change int) error {
+	return r.incrementCounter(ID, change, followersCounter)
+}
+
+func (r *repo) IncrementFriends(ID string, change int) error {
+	return r.incrementCounter(ID, change, friendsCounter)
+}
+
+func (r *repo) IncrementShweets(ID string, change int) error {
+	return r.incrementCounter(ID, change, shweetsCounter)
+}
+
+type counter string
+
+const (
+	followersCounter counter = "followers"
+	friendsCounter   counter = "friends"
+	shweetsCounter   counter = "shweets"
+)
+
+func (r *repo) incrementCounter(ID string, change int, c counter) error {
+	if ID == "" {
+		return errors.ErrInvalidID
+	}
+
+	q := fmt.Sprintf("UPDATE user_counters SET %s = %s + ? WHERE id = ?", c, c)
+	err := r.sess.Query(q, change, ID).Exec()
+
+	if err != nil {
+		log.LogError("users.incrementCounter", "Could not increment user counter", err)
+		return errors.ErrUnexpected
+	} else {
+		return nil
+	}
 }

@@ -1,21 +1,9 @@
-CREATE TABLE shweet_likes_count
+CREATE TABLE shweet_counters
 (
     id UUID,
-    count COUNTER,
-    PRIMARY KEY ( id )
-);
-
-CREATE TABLE shweet_reshweets_count
-(
-    id UUID,
-    count COUNTER,
-    PRIMARY KEY ( id )
-);
-
-CREATE TABLE shweet_comments_count
-(
-    id UUID,
-    count COUNTER,
+    likes COUNTER,
+    reshweets COUNTER,
+    comments COUNTER,
     PRIMARY KEY ( id )
 );
 

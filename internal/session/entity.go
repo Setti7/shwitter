@@ -8,7 +8,7 @@ import (
 )
 
 type Session struct {
-	ID         string    `json:"id"`
+	ID         string    `json:"id"` // TODO use SessionID as type and UserID
 	UserID     string    `json:"user_id"`
 	Expiration time.Time `json:"expiration"`
 	Token      string    `json:"token"`

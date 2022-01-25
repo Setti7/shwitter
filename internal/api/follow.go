@@ -19,7 +19,7 @@ func followOrUnfollowUser(svc follow.Service) gin.HandlerFunc {
 		}
 
 		followUserID := c.Param("id")
-		err := svc.GetFollowRepo().FollowOrUnfollowUser(user.ID, followUserID)
+		err := svc.FollowOrUnfollowUser(user.ID, followUserID)
 
 		if err == errors.ErrNotFound {
 			util.AbortResponseNotFound(c)
@@ -40,7 +40,7 @@ func isFollowing(svc follow.Service) gin.HandlerFunc {
 		}
 
 		followUserID := c.Param("id")
-		isFollowing, err := svc.GetFollowRepo().IsFollowing(user.ID, followUserID)
+		isFollowing, err := svc.IsFollowing(user.ID, followUserID)
 
 		if err == errors.ErrInvalidID {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID."})
@@ -58,7 +58,7 @@ func listFriends(svc follow.Service) gin.HandlerFunc {
 		}
 
 		userID := c.Param("id")
-		friends, err := svc.GetFollowRepo().ListFriends(userID, p)
+		friends, err := svc.ListFriends(userID, p)
 
 		if err != nil {
 			util.AbortResponseUnexpectedError(c)
@@ -76,7 +76,7 @@ func listFollowers(svc follow.Service) gin.HandlerFunc {
 		}
 
 		userID := c.Param("id")
-		followers, err := svc.GetFollowRepo().ListFollowers(userID, p)
+		followers, err := svc.ListFollowers(userID, p)
 
 		if err != nil {
 			util.AbortResponseUnexpectedError(c)

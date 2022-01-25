@@ -6,7 +6,6 @@ import (
 
 	"github.com/Setti7/shwitter/internal/errors"
 	"github.com/Setti7/shwitter/internal/log"
-	"github.com/Setti7/shwitter/internal/query/counter"
 	"github.com/Setti7/shwitter/internal/signal"
 	"github.com/Setti7/shwitter/internal/users"
 	"github.com/gocql/gocql"
@@ -108,7 +107,7 @@ func (r *repo) Create(f *CreateShweetForm, userID string) (string, error) {
 	signal.PostCreate.Emit(Shweet{}, shweet)
 
 	// Increment the user shweets counter
-	err = counter.UserShweetsCounter.Increment(shweet.UserID, 1)
+	err = r.users.IncrementShweets(shweet.UserID, 1)
 	if err != nil {
 		return "", err
 	}
@@ -173,7 +172,7 @@ func (r *repo) LikeOrUnlike(ID string, userID string) error {
 		inc = 1
 	}
 
-	err = counter.ShweetLikesCounter.Increment(ID, inc)
+	err = r.incrementCounter(ID, inc, likesCounter)
 	if err != nil {
 		return err
 	}
@@ -237,14 +236,14 @@ func (r *repo) enrichWithDetails(shweets []*Shweet, userID string) ([]*ShweetDet
 	}
 
 	// Enriching with counter
-	shweetDetails, err := r.enrichWithCounters(shweetDetails)
+	shweetDetails, err := r.enrichWithCounters(shweets)
 	if err != nil {
 		return nil, err
 	}
 
 	// Enrich with like and reshweeted status
 	if userID != "" {
-		shweetDetails, err = r.enrichWithStatuses(shweetDetails, userID)
+		err = r.enrichWithStatuses(shweetDetails, userID)
 		if err != nil {
 			return nil, err
 		}
@@ -256,10 +255,9 @@ func (r *repo) enrichWithDetails(shweets []*Shweet, userID string) ([]*ShweetDet
 // Enrich a slice of shweets with "liked" and "reshweeted" statuses.
 //
 // Returns ErrUnexpected on any error.
-// TODO refactor: do enrichment inplace
-func (r *repo) enrichWithStatuses(shweets []*ShweetDetail, userID string) ([]*ShweetDetail, error) {
+func (r *repo) enrichWithStatuses(shweets []*ShweetDetail, userID string) error {
 	if len(shweets) == 0 {
-		return []*ShweetDetail{}, nil
+		return nil
 	}
 
 	shweetMap := make(map[string]*ShweetDetail)
@@ -268,9 +266,6 @@ func (r *repo) enrichWithStatuses(shweets []*ShweetDetail, userID string) ([]*Sh
 	shweetIDs := make([]string, len(shweets))
 	for index, shweet := range shweets {
 		// by default shweets are not liked or reshweeted
-		shweet.Liked = false
-		shweet.ReShweeted = false
-
 		shweetIDs[index] = shweet.ID
 		shweetMap[shweet.ID] = shweet
 	}
@@ -284,16 +279,61 @@ func (r *repo) enrichWithStatuses(shweets []*ShweetDetail, userID string) ([]*Sh
 		shweetID := m["shweet_id"].(gocql.UUID).String()
 		// set liked = true for all shweets that were found
 		shweetMap[shweetID].Liked = true
+
 		m = map[string]interface{}{}
 	}
 
 	err := iterable.Close()
 	if err != nil {
-		log.LogError("query.EnrichShweetIsLiked", "Could not enrich shweet liked status", err)
-		return nil, errors.ErrUnexpected
+		log.LogError("shweets.enrichWithStatuses", "Could not enrich shweets liked status", err)
+		return errors.ErrUnexpected
 	}
 
 	// TODO: enrich with isReshweeted status
+
+	// Updating the shweet details inplace
+	for _, shweet := range shweets {
+		shweet = shweetMap[shweet.ID]
+	}
+
+	return nil
+}
+
+// Enrich shweets with its counters.
+//
+// Returns ErrUnexpected for any other errors.
+// TODO: fix logging function names on all packages
+func (r *repo) enrichWithCounters(shweets []*Shweet) ([]*ShweetDetail, error) {
+	if len(shweets) == 0 {
+		return []*ShweetDetail{}, nil
+	}
+
+	shweetMap := make(map[string]*ShweetDetail)
+
+	// Get a list of the shweet IDs and populate a map with the shweets
+	shweetIDs := make([]string, len(shweets))
+	for index, shweet := range shweets {
+		shweetIDs[index] = shweet.ID
+		shweetMap[shweet.ID] = &ShweetDetail{Shweet: *shweet}
+	}
+
+	m := map[string]interface{}{}
+	iterable := r.sess.Query("SELECT id, likes, reshweets, comments FROM shweet_counter WHERE id IN ?", shweetIDs).Iter()
+	for iterable.MapScan(m) {
+		shweetID := m["id"].(gocql.UUID).String()
+
+		shweetMap[shweetID].LikeCount = m["Like"].(int)
+		shweetMap[shweetID].CommentCount = m["Comment"].(int)
+		shweetMap[shweetID].ReshweetCount = m["Reshweet"].(int)
+
+		m = map[string]interface{}{}
+	}
+
+	err := iterable.Close()
+	if err != nil {
+		log.LogError("shweets.enrichWithCounters", "Could not enrich shweets counters", err)
+		return nil, errors.ErrUnexpected
+	}
 
 	shweetDetails := make([]*ShweetDetail, len(shweets))
 	for index, id := range shweetIDs {
@@ -303,67 +343,26 @@ func (r *repo) enrichWithStatuses(shweets []*ShweetDetail, userID string) ([]*Sh
 	return shweetDetails, nil
 }
 
-// Enrich shweets with its counters.
-//
-// Returns ErrUnexpected for any other errors.
-// TODO: join shweet counter tables
-// TODO: fix logging function names on all packages
-// TODO: do enrichment inplace
-func (r *repo) enrichWithCounters(shweets []*ShweetDetail) ([]*ShweetDetail, error) {
-	if len(shweets) == 0 {
-		return shweets, nil
+type counter string
+
+const (
+	likesCounter     counter = "likes"
+	reshweetsCounter counter = "reshweets"
+	commentsCounter  counter = "comments"
+)
+
+func (r *repo) incrementCounter(ID string, change int, c counter) error {
+	if ID == "" {
+		return errors.ErrInvalidID
 	}
 
-	shweetMap := make(map[string]*ShweetDetail)
+	q := fmt.Sprintf("UPDATE shweet_counter SET %s = %s + ? WHERE id = ?", c, c)
+	err := r.sess.Query(q, change, ID).Exec()
 
-	// Get a list of the shweet IDs and populate a map with the shweets
-	shweetIDs := make([]string, len(shweets))
-	for index, shweet := range shweets {
-		shweetIDs[index] = shweet.ID
-		shweetMap[shweet.ID] = shweet
-	}
-
-	enrichCounter := func(c counter.CounterTable) error {
-		m := map[string]interface{}{}
-		iterable := r.sess.Query(fmt.Sprintf("SELECT id, count FROM %s WHERE id IN ?", c), shweetIDs).Iter()
-		for iterable.MapScan(m) {
-			shweetID := m["id"].(gocql.UUID).String()
-			count := int(m["count"].(int64))
-			if c == counter.ShweetLikesCounter {
-				shweetMap[shweetID].LikeCount = count
-			} else if c == counter.ShweetCommentsCounter {
-				shweetMap[shweetID].CommentCount = count
-			} else if c == counter.ShweetReshweetsCounter {
-				shweetMap[shweetID].ReshweetCount = count
-			}
-			m = map[string]interface{}{}
-		}
-
-		return iterable.Close()
-	}
-
-	err := enrichCounter(counter.ShweetLikesCounter)
 	if err != nil {
-		log.LogError("counter.EnrichShweetCounter", "Could not enrich like counter", err)
-		return nil, errors.ErrUnexpected
+		log.LogError("shweets.incrementCounter", "Could not increment shweet counter", err)
+		return errors.ErrUnexpected
+	} else {
+		return nil
 	}
-
-	err = enrichCounter(counter.ShweetReshweetsCounter)
-	if err != nil {
-		log.LogError("counter.EnrichShweetCounter", "Could not enrich reshweet counter", err)
-		return nil, errors.ErrUnexpected
-	}
-
-	err = enrichCounter(counter.ShweetCommentsCounter)
-	if err != nil {
-		log.LogError("counter.EnrichShweetCounter", "Could not enrich comment counter", err)
-		return nil, errors.ErrUnexpected
-	}
-
-	shweetDetails := make([]*ShweetDetail, len(shweets))
-	for index, id := range shweetIDs {
-		shweetDetails[index] = shweetMap[id]
-	}
-
-	return shweetDetails, nil
 }
