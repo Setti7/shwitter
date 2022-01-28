@@ -86,4 +86,9 @@ func listFollowers(svc follow.Service) gin.HandlerFunc {
 	}
 }
 
-// TODO add handler register
+func MakeFollowHandlers(r *gin.Engine, svc follow.Service) {
+	r.GET("/v1/users/:id/follow", isFollowing(svc))
+	r.POST("/v1/users/:id/follow", followOrUnfollowUser(svc))
+	r.GET("/v1/users/:id/followers", listFollowers(svc))
+	r.GET("/v1/users/:id/friends", listFriends(svc))
+}

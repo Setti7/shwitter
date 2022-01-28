@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Setti7/shwitter/internal/api"
 	"github.com/Setti7/shwitter/internal/config"
 	"github.com/Setti7/shwitter/internal/follow"
 	"github.com/Setti7/shwitter/internal/middleware"
@@ -43,7 +44,7 @@ func startAction(ctx *cli.Context) error {
 	followService := follow.NewService(followRepo)
 
 	shweetRepo := shweets.NewCassandraRepository(service.Cassandra(), usersRepo)
-	shweetService  := shweets.NewService(shweetRepo)
+	shweetService := shweets.NewService(shweetRepo)
 
 	timelineRepo := timeline.NewCassandraRepository(service.Cassandra(), usersRepo, shweetRepo)
 	timelineService := timeline.NewService(timelineRepo, shweetService)
@@ -61,36 +62,18 @@ func startAction(ctx *cli.Context) error {
 
 	r.GET("/healthz", heartbeat)
 
-	r.POST("/shweets", api.CreateShweet)
-	r.GET("/shweets", api.ListShweets)
-	r.GET("/shweets/:id", api.GetShweet)
-	r.POST("/shweets/:id/like", api.LikeOrUnlikeShweet)
+	api.MakeUsersHandlers(r, usersService)
+	api.MakeTimelineHandlers(r, timelineService)
+	api.MakeShweetsHandlers(r, shweetService)
+	api.MakeSessionHandlers(r, sessService)
+	api.MakeFollowHandlers(r, followService)
 
 	// TODO: add tests, interface and channels
-	r.GET("/users", api.ListUsers)
-	r.GET("/users/:id", api.GetUser)
-	r.GET("/users/:id/profile", api.GetUserProfile)
-	r.POST("/users", api.CreateUser)
-	r.GET("/users/me", api.GetCurrentUser)
-
-	r.GET("/users/:id/follow", api.IsFollowingUser)
-	r.POST("/users/:id/follow", api.FollowOrUnfollowUser)
-	r.GET("/users/:id/followers", api.ListFriendsOrFollowers(false))
-	r.GET("/users/:id/friends", api.ListFriendsOrFollowers(true))
-
-	r.POST("/sessions", api.CreateSession)
-	r.DELETE("/sessions/:id", api.DeleteSession)
-	r.GET("/sessions", api.ListUserSessions)
-
-	r.GET("/timeline", api.GetTimelineForCurrentUser)
-	r.GET("/userline/:id", api.GetUserLine)
-
 	// add mentions, then add mentions notifications
 	// add chat, after notifications
 	// add api rate limiter = 60/min guest 100/min logged
 
 	log.Fatal(r.Run())
-
 	return nil
 }
 

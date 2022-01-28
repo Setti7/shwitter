@@ -50,4 +50,7 @@ func likeOrUnlikeShweet(svc shweets.Service) gin.HandlerFunc {
 	}
 }
 
-// TODO add handler register
+func MakeShweetsHandlers(r *gin.Engine, svc shweets.Service) {
+	r.GET("/v1/shweets/:id", getShweet(svc))
+	r.POST("/v1/shweets/:id/like", likeOrUnlikeShweet(svc))
+}

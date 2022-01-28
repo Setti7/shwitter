@@ -71,4 +71,8 @@ func getUserline(svc timeline.Service) gin.HandlerFunc {
 	}
 }
 
-// TODO add handler register
+func MakeTimelineHandlers(r *gin.Engine, svc timeline.Service) {
+	r.POST("/v1/timeline", createShweet(svc))
+	r.GET("/v1/timeline", getTimeline(svc))
+	r.GET("/v1/userline/:id", getUserline(svc))
+}

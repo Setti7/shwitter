@@ -80,4 +80,9 @@ func deleteAllUserSessions(svc session.Service) gin.HandlerFunc {
 	}
 }
 
-// TODO add handler register
+func MakeSessionHandlers(r *gin.Engine, svc session.Service) {
+	r.POST("/v1/sessions", createSession(svc))
+	r.GET("/v1/sessions", listUserSessions(svc))
+	r.DELETE("/v1/sessions/:id", deleteSession(svc))
+	r.DELETE("/v1/sessions/", deleteAllUserSessions(svc))
+}

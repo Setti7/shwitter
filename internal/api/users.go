@@ -72,4 +72,9 @@ func createUser(svc users.Service) gin.HandlerFunc {
 	}
 }
 
-// TODO add handler register
+func MakeUsersHandlers(r *gin.Engine, svc users.Service) {
+	r.GET("/v1/users/:id", getUserByID(svc))
+	r.GET("/v1/users/:id/profile", getUserProfile(svc))
+	r.POST("/v1/users", createUser(svc))
+	r.GET("/v1/users/me", getCurrentUser())
+}
