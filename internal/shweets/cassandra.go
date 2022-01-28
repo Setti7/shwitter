@@ -6,7 +6,6 @@ import (
 
 	"github.com/Setti7/shwitter/internal/errors"
 	"github.com/Setti7/shwitter/internal/log"
-	"github.com/Setti7/shwitter/internal/signal"
 	"github.com/Setti7/shwitter/internal/users"
 	"github.com/gocql/gocql"
 )
@@ -47,7 +46,7 @@ func (r *repo) find(ID string) (*Shweet, error) {
 		CreatedAt: m["created_at"].(time.Time),
 	}
 
-	err = r.enrichWithUserInfo([]*Shweet{shweet})
+	err = r.EnrichWithUserInfo([]*Shweet{shweet})
 	if err != nil {
 		return nil, err // we don't need to log the error because it's already logged inside that func
 	}
@@ -65,7 +64,7 @@ func (r *repo) FindWithDetail(ID string, userID string) (*ShweetDetail, error) {
 		return nil, err
 	}
 
-	shweetDetails, err := r.enrichWithDetails([]*Shweet{shweet}, userID)
+	shweetDetails, err := r.EnrichWithDetails([]*Shweet{shweet}, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -76,9 +75,9 @@ func (r *repo) FindWithDetail(ID string, userID string) (*ShweetDetail, error) {
 // Create a shweet
 //
 // Returns ErrInvalidID if the ID is empty and ErrUnexpected for any other errors.
-func (r *repo) Create(f *CreateShweetForm, userID string) (string, error) {
+func (r *repo) Create(f *CreateShweetForm, userID string) (*Shweet, error) {
 	if userID == "" {
-		return "", errors.ErrInvalidID
+		return nil, errors.ErrInvalidID
 	}
 
 	uuid, _ := gocql.RandomUUID()
@@ -101,18 +100,16 @@ func (r *repo) Create(f *CreateShweetForm, userID string) (string, error) {
 		uuid, shweet.UserID, f.Message, shweet.CreatedAt).Exec()
 	if err != nil {
 		log.LogError("query.CreateShweet", "Error creating shweet", err)
-		return "", errors.ErrUnexpected
+		return nil, errors.ErrUnexpected
 	}
-
-	signal.PostCreate.Emit(Shweet{}, shweet)
 
 	// Increment the user shweets counter
 	err = r.users.IncrementShweets(shweet.UserID, 1)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return uuid.String(), nil
+	return shweet, nil
 }
 
 // Like or Unlike a shweet for the given user.
@@ -201,7 +198,7 @@ func (r *repo) isLikedBy(ID string, userID string) (bool, error) {
 // Enrich the user info of a slice of shweets
 //
 // Returns ErrUnexpected on any error.
-func (r *repo) enrichWithUserInfo(shweets []*Shweet) error {
+func (r *repo) EnrichWithUserInfo(shweets []*Shweet) error {
 	// Get the list of user IDs
 	var userIDs []string
 	for _, shweet := range shweets {
@@ -224,7 +221,7 @@ func (r *repo) enrichWithUserInfo(shweets []*Shweet) error {
 // Enrich a slice of shweets with its details
 //
 // Returns ErrUnexpected on any error.
-func (r *repo) enrichWithDetails(shweets []*Shweet, userID string) ([]*ShweetDetail, error) {
+func (r *repo) EnrichWithDetails(shweets []*Shweet, userID string) ([]*ShweetDetail, error) {
 	if len(shweets) == 0 {
 		return []*ShweetDetail{}, nil
 	}

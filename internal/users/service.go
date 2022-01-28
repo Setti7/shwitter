@@ -19,17 +19,15 @@ type Service interface {
 	// ChangePassword(user *User, password string) error
 	// Validate(user *User) error
 	// IsValid(user *User) bool
-
-	GetUsersRepo() Repository
 }
 
 type svc struct {
-	usersRepo Repository
+	repo Repository
 	lock *redislock.Client
 }
 
-func NewService(u Repository, l *redislock.Client) Service {
-	return &svc{usersRepo: u, lock: l}
+func NewService(r Repository, l *redislock.Client) Service {
+	return &svc{repo: r, lock: l}
 }
 
 func (s *svc) Register(f *CreateUserForm) (*User, error) {
@@ -46,7 +44,7 @@ func (s *svc) Register(f *CreateUserForm) (*User, error) {
 	defer lock.Release(ctx)
 
 	// Check if the username is already taken (it must return ErrNotFound)
-	_, _, err = s.GetUsersRepo().FindCredentialsByUsername(f.Username)
+	_, _, err = s.repo.FindCredentialsByUsername(f.Username)
 	if err == nil {
 		return nil, ErrUsernameTaken
 	} else if err != errors.ErrNotFound {
@@ -54,7 +52,7 @@ func (s *svc) Register(f *CreateUserForm) (*User, error) {
 	}
 
 	// Save the user and its credentials
-	user, err := s.GetUsersRepo().CreateUser(f)
+	user, err := s.repo.CreateUser(f)
 	if err != nil {
 		return nil, errors.ErrUnexpected
 	}
@@ -68,8 +66,4 @@ func (s *svc) SignIn(user *User, password string) (string, error) {
 
 func (s *svc) Auth(user *User, password string) error {
 	return nil
-}
-
-func (s *svc) GetUsersRepo() Repository {
-	return s.usersRepo
 }

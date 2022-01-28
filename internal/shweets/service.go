@@ -2,7 +2,7 @@ package shweets
 
 type Service interface {
 	FindWithDetail(ID string, userID string) (*ShweetDetail, error)
-	Create(f *CreateShweetForm, userID string) (string, error)
+	Create(f *CreateShweetForm, userID string) (*Shweet, error)
 	LikeOrUnlike(ID string, userID string) error
 }
 
@@ -18,7 +18,7 @@ func (s *svc) FindWithDetail(ID string, userID string) (*ShweetDetail, error) {
 	return s.repo.FindWithDetail(ID, userID)
 }
 
-func (s *svc) Create(f *CreateShweetForm, userID string) (string, error) {
+func (s *svc) Create(f *CreateShweetForm, userID string) (*Shweet, error) {
 	return s.repo.Create(f, userID)
 }
 

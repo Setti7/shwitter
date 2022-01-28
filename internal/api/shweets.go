@@ -4,37 +4,13 @@ import (
 	"net/http"
 
 	"github.com/Setti7/shwitter/internal/errors"
-	"github.com/Setti7/shwitter/internal/form"
 	"github.com/Setti7/shwitter/internal/middleware"
 	"github.com/Setti7/shwitter/internal/shweets"
 	"github.com/Setti7/shwitter/internal/util"
 	"github.com/gin-gonic/gin"
 )
 
-func CreateShweet(svc shweets.Service) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var f shweets.CreateShweetForm
-
-		errs := form.BindJSONOrAbort(c, &f)
-		if errs != nil {
-			return
-		}
-
-		user, ok := middleware.GetUserFromCtxOrAbort(c)
-		if !ok {
-			return
-		}
-
-		shweetId, err := svc.Create(&f, user.ID)
-		if err != nil {
-			util.AbortResponseUnexpectedError(c)
-		} else {
-			c.JSON(http.StatusOK, gin.H{"data": shweetId})
-		}
-	}
-}
-
-func GetShweet(svc shweets.Service) gin.HandlerFunc {
+func getShweet(svc shweets.Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := ""
 
@@ -57,7 +33,7 @@ func GetShweet(svc shweets.Service) gin.HandlerFunc {
 	}
 }
 
-func LikeOrUnlikeShweet(svc shweets.Service) gin.HandlerFunc {
+func likeOrUnlikeShweet(svc shweets.Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		user, ok := middleware.GetUserFromCtxOrAbort(c)
 		if !ok {

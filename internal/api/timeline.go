@@ -3,44 +3,72 @@ package api
 import (
 	"net/http"
 
-	"github.com/Setti7/shwitter/internal/entity"
+	"github.com/Setti7/shwitter/internal/form"
 	"github.com/Setti7/shwitter/internal/middleware"
-	"github.com/Setti7/shwitter/internal/query"
+	"github.com/Setti7/shwitter/internal/shweets"
+	"github.com/Setti7/shwitter/internal/timeline"
 	"github.com/Setti7/shwitter/internal/util"
 	"github.com/gin-gonic/gin"
 )
 
-// TODO: paginate
-func GetTimelineForCurrentUser(c *gin.Context) {
-	user, ok := middleware.GetUserFromCtxOrAbort(c)
-	if !ok {
-		return
-	}
+func createShweet(svc timeline.Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var f shweets.CreateShweetForm
 
-	shweets, err := query.GetLineForUser(user.ID, user.ID, entity.TimeLine)
-	if err != nil {
-		util.AbortResponseUnexpectedError(c)
-		return
-	}
+		errs := form.BindJSONOrAbort(c, &f)
+		if errs != nil {
+			return
+		}
 
-	c.JSON(http.StatusOK, gin.H{"data": shweets})
+		user, ok := middleware.GetUserFromCtxOrAbort(c)
+		if !ok {
+			return
+		}
+
+		err := svc.CreateShweetAndInsertIntoLines(&f, user.ID)
+		if err != nil {
+			util.AbortResponseUnexpectedError(c)
+		} else {
+			c.JSON(http.StatusOK, gin.H{"data": "ok"})
+		}
+	}
 }
 
-// TODO: paginate
-func GetUserLine(c *gin.Context) {
-	currentUserID := ""
-	currentUser, ok := middleware.GetUserFromCtx(c)
-	if ok {
-		currentUserID = currentUser.ID
+func getTimeline(svc timeline.Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user, ok := middleware.GetUserFromCtxOrAbort(c)
+		if !ok {
+			return
+		}
+
+		tl, err := svc.GetTimelineFor(user.ID)
+		if err != nil {
+			util.AbortResponseUnexpectedError(c)
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": tl})
 	}
-
-	userID := c.Param("id")
-
-	shweets, err := query.GetLineForUser(currentUserID, userID, entity.UserLine)
-	if err != nil {
-		util.AbortResponseUnexpectedError(c)
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": shweets})
 }
+
+func getUserline(svc timeline.Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var currentUserID string
+		currentUser, ok := middleware.GetUserFromCtx(c)
+		if ok {
+			currentUserID = currentUser.ID
+		}
+
+		userID := c.Param("id")
+
+		tl, err := svc.GetUserlineFor(userID, currentUserID)
+		if err != nil {
+			util.AbortResponseUnexpectedError(c)
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": tl})
+	}
+}
+
+// TODO add handler register

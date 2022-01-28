@@ -11,6 +11,7 @@ import (
 	"github.com/Setti7/shwitter/internal/service"
 	"github.com/Setti7/shwitter/internal/session"
 	"github.com/Setti7/shwitter/internal/shweets"
+	"github.com/Setti7/shwitter/internal/timeline"
 	"github.com/Setti7/shwitter/internal/users"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -43,6 +44,9 @@ func startAction(ctx *cli.Context) error {
 
 	shweetRepo := shweets.NewCassandraRepository(service.Cassandra(), usersRepo)
 	shweetService  := shweets.NewService(shweetRepo)
+
+	timelineRepo := timeline.NewCassandraRepository(service.Cassandra(), usersRepo, shweetRepo)
+	timelineService := timeline.NewService(timelineRepo, shweetService)
 
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
