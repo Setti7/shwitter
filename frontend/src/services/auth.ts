@@ -15,7 +15,7 @@ export const login = async (
   const api = await apiService.getExecutor();
 
   try {
-    const response = await api.post("sessions", {
+    const response = await api.post("v1/sessions", {
       username,
       password,
     });
@@ -42,7 +42,7 @@ export const createUser = async ({
   const api = await apiService.getExecutor();
 
   try {
-    const response = await api.post("users", {
+    const response = await api.post("v1/users", {
       username,
       name,
       email,

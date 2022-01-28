@@ -126,7 +126,7 @@ func (r *repo) LikeOrUnlike(ID string, userID string) error {
 		return errors.ErrNotFound
 	}
 
-	isLiked, err := r.isLikedBy(userID, ID)
+	isLiked, err := r.isLikedBy(ID, userID)
 	if err != nil {
 		return errors.ErrNotFound
 	}
@@ -289,8 +289,8 @@ func (r *repo) enrichWithStatuses(shweets []*ShweetDetail, userID string) error 
 	// TODO: enrich with isReshweeted status
 
 	// Updating the shweet details inplace
-	for _, shweet := range shweets {
-		shweet = shweetMap[shweet.ID]
+	for i, shweet := range shweets {
+		shweets[i] = shweetMap[shweet.ID]
 	}
 
 	return nil
@@ -315,13 +315,13 @@ func (r *repo) enrichWithCounters(shweets []*Shweet) ([]*ShweetDetail, error) {
 	}
 
 	m := map[string]interface{}{}
-	iterable := r.sess.Query("SELECT id, likes, reshweets, comments FROM shweet_counter WHERE id IN ?", shweetIDs).Iter()
+	iterable := r.sess.Query("SELECT id, likes, reshweets, comments FROM shweet_counters WHERE id IN ?", shweetIDs).Iter()
 	for iterable.MapScan(m) {
 		shweetID := m["id"].(gocql.UUID).String()
 
-		shweetMap[shweetID].LikeCount = m["Like"].(int)
-		shweetMap[shweetID].CommentCount = m["Comment"].(int)
-		shweetMap[shweetID].ReshweetCount = m["Reshweet"].(int)
+		shweetMap[shweetID].LikeCount = int(m["likes"].(int64))
+		shweetMap[shweetID].CommentCount = int(m["comments"].(int64))
+		shweetMap[shweetID].ReshweetCount = int(m["reshweets"].(int64))
 
 		m = map[string]interface{}{}
 	}
@@ -353,7 +353,7 @@ func (r *repo) incrementCounter(ID string, change int, c counter) error {
 		return errors.ErrInvalidID
 	}
 
-	q := fmt.Sprintf("UPDATE shweet_counter SET %s = %s + ? WHERE id = ?", c, c)
+	q := fmt.Sprintf("UPDATE shweet_counters SET %s = %s + ? WHERE id = ?", c, c)
 	err := r.sess.Query(q, change, ID).Exec()
 
 	if err != nil {

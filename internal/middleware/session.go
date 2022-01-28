@@ -33,7 +33,7 @@ func SessionMiddleware(svc session.Service) gin.HandlerFunc {
 				return
 			}
 
-			c.Set(SESSION_KEY, &sess)
+			c.Set(SESSION_KEY, sess)
 		}
 
 		c.Next()

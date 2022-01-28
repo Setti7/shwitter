@@ -170,9 +170,9 @@ func (r *repo) enrichCounters(u *User) (*UserProfile, error) {
 		log.LogError("users.enrichCounters", "Could not enrich user counters", err)
 		return nil, errors.ErrUnexpected
 	} else {
-		followers = m["followers"].(int)
-		friends = m["friends"].(int)
-		shweets = m["shweets"].(int)
+		followers = int(m["followers"].(int64))
+		friends = int(m["friends"].(int64))
+		shweets = int(m["shweets"].(int64))
 	}
 
 	return &UserProfile{
