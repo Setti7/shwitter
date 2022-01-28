@@ -14,15 +14,13 @@ type Service interface {
 	SignOutFromAll(userID string) error
 }
 
-
-// TODO dont use usersRepo, use UserService
 type svc struct {
-	repo  Repository
-	usersRepo users.Repository
+	repo     Repository
+	usersSvc users.Service
 }
 
-func NewService(sess Repository, users users.Repository) Service {
-	return &svc{repo: sess, usersRepo: users}
+func NewService(r Repository, u users.Service) Service {
+	return &svc{repo: r, usersSvc: u}
 }
 
 func (s *svc) Find(userID string, sessID string) (*Session, error) {
@@ -38,12 +36,8 @@ func (s *svc) SignIn(f LoginForm) (*Session, error) {
 		return nil, ErrInvalidLoginForm
 	}
 
-	userID, creds, err := s.usersRepo.FindCredentialsByUsername(f.Username)
+	userID, err := s.usersSvc.Auth(f.Username, f.Password)
 	if err != nil {
-		return nil, ErrInvalidLoginForm
-	}
-
-	if !creds.Authenticate(f.Password) {
 		return nil, ErrInvalidLoginForm
 	}
 

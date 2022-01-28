@@ -11,3 +11,5 @@ type CreateUserForm struct {
 
 var ErrTryAgainLater = errors.New("try again")
 var ErrUsernameTaken = errors.New("username taken")
+var ErrFailedAuth = errors.New("failed auth")
+

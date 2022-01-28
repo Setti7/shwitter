@@ -37,7 +37,7 @@ func startAction(ctx *cli.Context) error {
 	usersService := users.NewService(usersRepo, service.Lock())
 
 	sessRepo := session.NewCassandraRepository(service.Cassandra())
-	sessService := session.NewService(sessRepo, usersRepo)
+	sessService := session.NewService(sessRepo, usersService)
 
 	followRepo := follow.NewCassandraRepository(service.Cassandra(), usersRepo)
 	followService := follow.NewService(followRepo)

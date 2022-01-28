@@ -10,15 +10,14 @@ import (
 )
 
 type Service interface {
-	// Auth
+	Find(ID string) (*User, error)
+	FindProfile(ID string) (*UserProfile, error)
+
 	Register(f *CreateUserForm) (*User, error)
-	SignIn(user *User, password string) (string, error)
-	Auth(user *User, password string) error
+	Auth(username string, password string) (userID string, err error)
 
 	// ForgotPassword(f *User) error
 	// ChangePassword(user *User, password string) error
-	// Validate(user *User) error
-	// IsValid(user *User) bool
 }
 
 type svc struct {
@@ -28,6 +27,14 @@ type svc struct {
 
 func NewService(r Repository, l *redislock.Client) Service {
 	return &svc{repo: r, lock: l}
+}
+
+func (s *svc) Find(ID string) (*User, error) {
+	return s.repo.Find(ID)
+}
+
+func (s *svc) FindProfile(ID string) (*UserProfile, error) {
+	return s.repo.FindProfile(ID)
 }
 
 func (s *svc) Register(f *CreateUserForm) (*User, error) {
@@ -60,10 +67,15 @@ func (s *svc) Register(f *CreateUserForm) (*User, error) {
 	return user, nil
 }
 
-func (s *svc) SignIn(user *User, password string) (string, error) {
-	return "", nil
-}
+func (s *svc) Auth(username string, password string) (string, error) {
+	userID, creds, err := s.repo.FindCredentialsByUsername(username)
+	if err != nil {
+		return "", ErrFailedAuth
+	}
 
-func (s *svc) Auth(user *User, password string) error {
-	return nil
+	if !creds.Authenticate(password) {
+		return "", ErrFailedAuth
+	}
+
+	return userID, nil
 }

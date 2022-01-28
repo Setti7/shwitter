@@ -15,7 +15,7 @@ func UserMiddleware(svc users.Service) gin.HandlerFunc {
 		sess, ok := GetSessionFromCtx(c)
 
 		if ok {
-			user, err := svc.GetUsersRepo().Find(sess.UserID)
+			user, err := svc.Find(sess.UserID)
 			if err != nil {
 				util.AbortResponseUnexpectedError(c)
 				return
