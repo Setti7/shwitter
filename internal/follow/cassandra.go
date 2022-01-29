@@ -19,7 +19,7 @@ func NewCassandraRepository(sess *gocql.Session, usersRepo users.Repository) Rep
 	return &repo{sess: sess, usersRepo: usersRepo}
 }
 
-func (r *repo) listFriendsOrFollowers(userID string, useFriendsTable bool, p *form.Paginator) ([]*FriendOrFollower, error) {
+func (r *repo) listFriendsOrFollowers(userID users.UserID, useFriendsTable bool, p *form.Paginator) ([]*FriendOrFollower, error) {
 	if userID == "" {
 		return nil, errors.ErrInvalidID
 	}
@@ -37,12 +37,12 @@ func (r *repo) listFriendsOrFollowers(userID string, useFriendsTable bool, p *fo
 
 	m := map[string]interface{}{}
 	for iterable.MapScan(m) {
-		var friendOrFollowerID string
+		var friendOrFollowerID users.UserID
 
 		if useFriendsTable {
-			friendOrFollowerID = m["friend_id"].(gocql.UUID).String()
+			friendOrFollowerID = users.UserID(m["friend_id"].(gocql.UUID).String())
 		} else {
-			friendOrFollowerID = m["follower_id"].(gocql.UUID).String()
+			friendOrFollowerID = users.UserID(m["follower_id"].(gocql.UUID).String())
 		}
 
 		fof := &FriendOrFollower{
@@ -59,7 +59,7 @@ func (r *repo) listFriendsOrFollowers(userID string, useFriendsTable bool, p *fo
 		return nil, errors.ErrUnexpected
 	}
 
-	var friendOrFollowerIDs []string
+	var friendOrFollowerIDs []users.UserID
 	for _, f := range friendOrFollowers {
 		friendOrFollowerIDs = append(friendOrFollowerIDs, f.ID)
 	}
@@ -82,21 +82,21 @@ func (r *repo) listFriendsOrFollowers(userID string, useFriendsTable bool, p *fo
 //
 // Returns ErrInvalidID if the ID is empty and ErrUnexpected on any other errors.
 // TODO refactor this using golang interfaces
-func (r *repo) ListFollowers(userID string, p *form.Paginator) ([]*FriendOrFollower, error) {
+func (r *repo) ListFollowers(userID users.UserID, p *form.Paginator) ([]*FriendOrFollower, error) {
 	return r.listFriendsOrFollowers(userID, false, p)
 }
 
 // List all friends of a given user
 //
 // Returns ErrInvalidID if the ID is empty and ErrUnexpected on any other errors.
-func (r *repo) ListFriends(userID string, p *form.Paginator) ([]*FriendOrFollower, error) {
+func (r *repo) ListFriends(userID users.UserID, p *form.Paginator) ([]*FriendOrFollower, error) {
 	return r.listFriendsOrFollowers(userID, true, p)
 }
 
 // Check if a user is following another one
 //
 // Returns ErrInvalidID if any of the IDs are empty.
-func (r *repo) IsFollowing(userID string, following string) (bool, error) {
+func (r *repo) IsFollowing(userID users.UserID, following users.UserID) (bool, error) {
 	if userID == "" || following == "" {
 		return false, errors.ErrInvalidID
 	}
@@ -115,7 +115,7 @@ func (r *repo) IsFollowing(userID string, following string) (bool, error) {
 //
 // Returns ErrInvalidID if any userID is empty, ErrNotFound if otherUserID was
 // not found and ErrUnexpected on any other errors.
-func (r *repo) FollowOrUnfollowUser(currentUserID string, otherUserID string) error {
+func (r *repo) FollowOrUnfollowUser(currentUserID users.UserID, otherUserID users.UserID) error {
 	if currentUserID == "" || otherUserID == "" {
 		return errors.ErrInvalidID
 	}

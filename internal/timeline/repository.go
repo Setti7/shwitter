@@ -1,10 +1,13 @@
 package timeline
 
-import "github.com/Setti7/shwitter/internal/shweets"
+import (
+	"github.com/Setti7/shwitter/internal/shweets"
+	"github.com/Setti7/shwitter/internal/users"
+)
 
 type Reader interface {
-	GetTimelineFor(userID string) ([]*shweets.ShweetDetail, error)
-	GetUserlineFor(userID string, currentUserID string) ([]*shweets.ShweetDetail, error)
+	GetTimelineFor(userID users.UserID) ([]*shweets.ShweetDetail, error)
+	GetUserlineFor(userID users.UserID, currentUserID users.UserID) ([]*shweets.ShweetDetail, error)
 }
 
 type Writer interface {

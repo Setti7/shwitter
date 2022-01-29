@@ -7,6 +7,7 @@ import (
 	"github.com/Setti7/shwitter/internal/follow"
 	"github.com/Setti7/shwitter/internal/form"
 	"github.com/Setti7/shwitter/internal/middleware"
+	"github.com/Setti7/shwitter/internal/users"
 	"github.com/Setti7/shwitter/internal/util"
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +19,7 @@ func followOrUnfollowUser(svc follow.Service) gin.HandlerFunc {
 			return
 		}
 
-		followUserID := c.Param("id")
+		followUserID := users.UserID(c.Param("id"))
 		err := svc.FollowOrUnfollowUser(user.ID, followUserID)
 
 		if err == errors.ErrNotFound {
@@ -39,7 +40,7 @@ func isFollowing(svc follow.Service) gin.HandlerFunc {
 			return
 		}
 
-		followUserID := c.Param("id")
+		followUserID := users.UserID(c.Param("id"))
 		isFollowing, err := svc.IsFollowing(user.ID, followUserID)
 
 		if err == errors.ErrInvalidID {
@@ -57,7 +58,7 @@ func listFriends(svc follow.Service) gin.HandlerFunc {
 			return
 		}
 
-		userID := c.Param("id")
+		userID := users.UserID(c.Param("id"))
 		friends, err := svc.ListFriends(userID, p)
 
 		if err != nil {
@@ -75,7 +76,7 @@ func listFollowers(svc follow.Service) gin.HandlerFunc {
 			return
 		}
 
-		userID := c.Param("id")
+		userID := users.UserID(c.Param("id"))
 		followers, err := svc.ListFollowers(userID, p)
 
 		if err != nil {

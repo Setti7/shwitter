@@ -6,12 +6,12 @@ import (
 )
 
 type Service interface {
-	Find(userID string, sessID string) (*Session, error)
-	List(userID string) ([]*Session, error)
+	Find(userID users.UserID, sessID string) (*Session, error)
+	List(userID users.UserID) ([]*Session, error)
 
 	SignIn(LoginForm) (*Session, error)
-	SignOut(userID string, sessID string) error
-	SignOutFromAll(userID string) error
+	SignOut(userID users.UserID, sessID string) error
+	SignOutFromAll(userID users.UserID) error
 }
 
 type svc struct {
@@ -23,11 +23,11 @@ func NewService(r Repository, u users.Service) Service {
 	return &svc{repo: r, usersSvc: u}
 }
 
-func (s *svc) Find(userID string, sessID string) (*Session, error) {
+func (s *svc) Find(userID users.UserID, sessID string) (*Session, error) {
 	return s.repo.Find(userID, sessID)
 }
 
-func (s *svc) List(userID string) ([]*Session, error) {
+func (s *svc) List(userID users.UserID) ([]*Session, error) {
 	return s.repo.ListForUser(userID)
 }
 
@@ -49,10 +49,10 @@ func (s *svc) SignIn(f LoginForm) (*Session, error) {
 	return sess, nil
 }
 
-func (s *svc) SignOut(userID string, sessID string) error {
+func (s *svc) SignOut(userID users.UserID, sessID string) error {
 	return s.repo.Delete(userID, sessID)
 }
 
-func (s *svc) SignOutFromAll(userID string) error {
+func (s *svc) SignOutFromAll(userID users.UserID) error {
 	return s.repo.DeleteAllForUser(userID)
 }

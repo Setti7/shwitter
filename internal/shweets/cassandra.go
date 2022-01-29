@@ -30,7 +30,7 @@ func (r *repo) find(ID string) (*Shweet, error) {
 	}
 
 	m := map[string]interface{}{}
-	query := "SELECT id, user_id, message, created_at FROM shweets WHERE id=? LIMIT 1"
+	query := "SELECT id, user_id, message, created_at FROM shweets WHERE id = ? LIMIT 1"
 	err = r.sess.Query(query, uuid).Consistency(gocql.One).MapScan(m)
 	if err == gocql.ErrNotFound {
 		return nil, errors.ErrNotFound
@@ -41,7 +41,7 @@ func (r *repo) find(ID string) (*Shweet, error) {
 
 	shweet := &Shweet{
 		ID:        m["id"].(gocql.UUID).String(),
-		UserID:    m["user_id"].(gocql.UUID).String(),
+		UserID:    users.UserID(m["user_id"].(gocql.UUID).String()),
 		Message:   m["message"].(string),
 		CreatedAt: m["created_at"].(time.Time),
 	}
@@ -58,7 +58,7 @@ func (r *repo) find(ID string) (*Shweet, error) {
 //
 // Returns ErrInvalidID if the ID is empty, ErrNotFound if the shweet was not found and ErrUnexpected
 // for any other errors.
-func (r *repo) FindWithDetail(ID string, userID string) (*ShweetDetail, error) {
+func (r *repo) FindWithDetail(ID string, userID users.UserID) (*ShweetDetail, error) {
 	shweet, err := r.find(ID)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func (r *repo) FindWithDetail(ID string, userID string) (*ShweetDetail, error) {
 // Create a shweet
 //
 // Returns ErrInvalidID if the ID is empty and ErrUnexpected for any other errors.
-func (r *repo) Create(f *CreateShweetForm, userID string) (*Shweet, error) {
+func (r *repo) Create(f *CreateShweetForm, userID users.UserID) (*Shweet, error) {
 	if userID == "" {
 		return nil, errors.ErrInvalidID
 	}
@@ -92,7 +92,7 @@ func (r *repo) Create(f *CreateShweetForm, userID string) (*Shweet, error) {
 	// Create the shweet
 	shweet := &Shweet{
 		ID:        uuid.String(),
-		UserID:    userID,
+		UserID:    users.UserID(userID),
 		Message:   f.Message,
 		CreatedAt: time.Now(),
 	}
@@ -116,7 +116,7 @@ func (r *repo) Create(f *CreateShweetForm, userID string) (*Shweet, error) {
 //
 // Returns ErrInvalidID for invalid IDs, ErrNotFound if the shweet does not exist or ErrUnexpected
 // for any other errors.
-func (r *repo) LikeOrUnlike(ID string, userID string) error {
+func (r *repo) LikeOrUnlike(ID string, userID users.UserID) error {
 	if userID == "" || ID == "" {
 		return errors.ErrInvalidID
 	}
@@ -180,7 +180,7 @@ func (r *repo) LikeOrUnlike(ID string, userID string) error {
 // Check if a user liked a given shweet.
 //
 // Returns ErrInvalidID if any of the IDs are empty.
-func (r *repo) isLikedBy(ID string, userID string) (bool, error) {
+func (r *repo) isLikedBy(ID string, userID users.UserID) (bool, error) {
 	if userID == "" || ID == "" {
 		return false, errors.ErrInvalidID
 	}
@@ -200,7 +200,7 @@ func (r *repo) isLikedBy(ID string, userID string) (bool, error) {
 // Returns ErrUnexpected on any error.
 func (r *repo) EnrichWithUserInfo(shweets []*Shweet) error {
 	// Get the list of user IDs
-	var userIDs []string
+	var userIDs []users.UserID
 	for _, shweet := range shweets {
 		userIDs = append(userIDs, shweet.UserID)
 	}
@@ -221,7 +221,7 @@ func (r *repo) EnrichWithUserInfo(shweets []*Shweet) error {
 // Enrich a slice of shweets with its details
 //
 // Returns ErrUnexpected on any error.
-func (r *repo) EnrichWithDetails(shweets []*Shweet, userID string) ([]*ShweetDetail, error) {
+func (r *repo) EnrichWithDetails(shweets []*Shweet, userID users.UserID) ([]*ShweetDetail, error) {
 	if len(shweets) == 0 {
 		return []*ShweetDetail{}, nil
 	}
@@ -252,7 +252,7 @@ func (r *repo) EnrichWithDetails(shweets []*Shweet, userID string) ([]*ShweetDet
 // Enrich a slice of shweets with "liked" and "reshweeted" statuses.
 //
 // Returns ErrUnexpected on any error.
-func (r *repo) enrichWithStatuses(shweets []*ShweetDetail, userID string) error {
+func (r *repo) enrichWithStatuses(shweets []*ShweetDetail, userID users.UserID) error {
 	if len(shweets) == 0 {
 		return nil
 	}

@@ -1,11 +1,14 @@
 package timeline
 
-import "github.com/Setti7/shwitter/internal/shweets"
+import (
+	"github.com/Setti7/shwitter/internal/shweets"
+	"github.com/Setti7/shwitter/internal/users"
+)
 
 type Service interface {
-	GetTimelineFor(userID string) ([]*shweets.ShweetDetail, error)
-	GetUserlineFor(userID string, currentUserID string) ([]*shweets.ShweetDetail, error)
-	CreateShweetAndInsertIntoLines(f *shweets.CreateShweetForm, userID string) error
+	GetTimelineFor(userID users.UserID) ([]*shweets.ShweetDetail, error)
+	GetUserlineFor(userID users.UserID, currentUserID users.UserID) ([]*shweets.ShweetDetail, error)
+	CreateShweetAndInsertIntoLines(f *shweets.CreateShweetForm, userID users.UserID) error
 }
 
 type svc struct {
@@ -17,15 +20,15 @@ func NewService(r Repository, s shweets.Service) Service {
 	return &svc{repo: r, shweetsSvc: s}
 }
 
-func (s *svc) GetTimelineFor(userID string) ([]*shweets.ShweetDetail, error) {
+func (s *svc) GetTimelineFor(userID users.UserID) ([]*shweets.ShweetDetail, error) {
 	return s.repo.GetTimelineFor(userID)
 }
 
-func (s *svc) GetUserlineFor(userID string, currentUserID string) ([]*shweets.ShweetDetail, error) {
+func (s *svc) GetUserlineFor(userID users.UserID, currentUserID users.UserID) ([]*shweets.ShweetDetail, error) {
 	return s.repo.GetUserlineFor(userID, currentUserID)
 }
 
-func (s *svc) CreateShweetAndInsertIntoLines(f *shweets.CreateShweetForm, userID string) error {
+func (s *svc) CreateShweetAndInsertIntoLines(f *shweets.CreateShweetForm, userID users.UserID) error {
 	shweet, err := s.shweetsSvc.Create(f, userID)
 	if err != nil {
 		return err

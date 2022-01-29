@@ -6,7 +6,6 @@ import (
 
 	"github.com/Setti7/shwitter/internal/errors"
 	"github.com/Setti7/shwitter/internal/log"
-	"github.com/Setti7/shwitter/internal/service"
 	s "github.com/Setti7/shwitter/internal/shweets"
 	"github.com/Setti7/shwitter/internal/users"
 	"github.com/gocql/gocql"
@@ -50,7 +49,7 @@ func (r *repo) AddShweetIntoLines(shweet *s.Shweet) error {
 // Get the timeline for the given user.
 //
 // Returns ErrInvalidID if userID is empty and ErrUnexpected for any other errors.
-func (r *repo) GetTimelineFor(userID string) ([]*s.ShweetDetail, error) {
+func (r *repo) GetTimelineFor(userID users.UserID) ([]*s.ShweetDetail, error) {
 	return r.getLineForUser(userID, userID, timeline)
 }
 
@@ -58,25 +57,25 @@ func (r *repo) GetTimelineFor(userID string) ([]*s.ShweetDetail, error) {
 // "currentUserID" can be empty.
 //
 // Returns ErrInvalidID if userID is empty and ErrUnexpected for any other errors.
-func (r *repo) GetUserlineFor(userID string, currentUserID string) ([]*s.ShweetDetail, error) {
+func (r *repo) GetUserlineFor(userID users.UserID, currentUserID users.UserID) ([]*s.ShweetDetail, error) {
 	return r.getLineForUser(userID, currentUserID, userline)
 }
 
 // TODO: add pagination
-func (r *repo) getLineForUser(userID string, currentUserID string, line Line) ([]*s.ShweetDetail, error) {
+func (r *repo) getLineForUser(userID users.UserID, currentUserID users.UserID, line Line) ([]*s.ShweetDetail, error) {
 	if userID == "" {
 		return nil, errors.ErrInvalidID
 	}
 
 	q := fmt.Sprintf("SELECT shweet_id, shweet_message, posted_by, created_at FROM %s WHERE user_id = ?", line)
-	iterable := service.Cassandra().Query(q, userID).Iter()
+	iterable := r.sess.Query(q, userID).Iter()
 	shweets := make([]*s.Shweet, 0, iterable.NumRows())
 
 	m := map[string]interface{}{}
 	for iterable.MapScan(m) {
 		shweets = append(shweets, &s.Shweet{
 			ID:        m["shweet_id"].(gocql.UUID).String(),
-			UserID:    m["posted_by"].(gocql.UUID).String(),
+			UserID:    users.UserID(m["posted_by"].(gocql.UUID).String()),
 			Message:   m["shweet_message"].(string),
 			CreatedAt: m["created_at"].(time.Time),
 		})
@@ -105,13 +104,13 @@ func (r *repo) getLineForUser(userID string, currentUserID string, line Line) ([
 // Insert a shweet into a line for a specific user.
 //
 // Returns ErrInvalidID if userID is empty and ErrUnexpected for any other errors.
-func (r *repo) insertShweetIntoLine(userID string, shweet *s.Shweet, line Line) error {
+func (r *repo) insertShweetIntoLine(userID users.UserID, shweet *s.Shweet, line Line) error {
 	if userID == "" {
 		return errors.ErrInvalidID
 	}
 
 	q := fmt.Sprintf("INSERT INTO %s (user_id, shweet_id, shweet_message, posted_by, created_at) VALUES (?, ?, ?, ?, ?)", line)
-	err := service.Cassandra().Query(q, userID, shweet.ID, shweet.Message, shweet.UserID, shweet.CreatedAt).Exec()
+	err := r.sess.Query(q, userID, shweet.ID, shweet.Message, shweet.UserID, shweet.CreatedAt).Exec()
 	if err != nil {
 		log.LogError("query.InsertShweetIntoLine", "Error while inserting shweet into user timeline", err)
 		return errors.ErrUnexpected
@@ -123,7 +122,7 @@ func (r *repo) insertShweetIntoLine(userID string, shweet *s.Shweet, line Line) 
 // Insert a shweet into the the timeline of all followers of the given user
 //
 // Returns ErrInvalidID if userID is empty and ErrUnexpected for any other errors.
-func (r *repo) bulkInsertShweetIntoFollowersTimelines(userID string, shweet *s.Shweet) error {
+func (r *repo) bulkInsertShweetIntoFollowersTimelines(userID users.UserID, shweet *s.Shweet) error {
 	if userID == "" {
 		return errors.ErrInvalidID
 	}
@@ -133,8 +132,8 @@ func (r *repo) bulkInsertShweetIntoFollowersTimelines(userID string, shweet *s.S
 	scanner := iterable.Scanner()
 
 	for scanner.Next() {
-		var id gocql.UUID
-		err := scanner.Scan(&id)
+		var ID gocql.UUID
+		err := scanner.Scan(&ID)
 
 		if err != nil {
 			log.LogError("timeline.bulkInsertShweetIntoFollowersTimelines", "Error while getting all followers for user", err)
@@ -144,9 +143,9 @@ func (r *repo) bulkInsertShweetIntoFollowersTimelines(userID string, shweet *s.S
 		// Asyncronously call the insertion
 		// Maybe this will work for large amount of followers, because the iterable is paginated (by default)
 		// but it would be nice if we could test this.
-		go func(ID string) {
+		go func(ID users.UserID) {
 			r.insertShweetIntoLine(ID, shweet, timeline)
-		}(id.String())
+		}(users.UserID(ID.String()))
 	}
 
 	return nil

@@ -1,15 +1,18 @@
 package follow
 
-import "github.com/Setti7/shwitter/internal/form"
+import (
+	"github.com/Setti7/shwitter/internal/form"
+	"github.com/Setti7/shwitter/internal/users"
+)
 
 type Reader interface {
-	ListFollowers(ID string, p *form.Paginator) ([]*FriendOrFollower, error)
-	ListFriends(ID string, p *form.Paginator) ([]*FriendOrFollower, error)
-	IsFollowing(ID string, otherID string) (bool, error)
+	ListFollowers(ID users.UserID, p *form.Paginator) ([]*FriendOrFollower, error)
+	ListFriends(ID users.UserID, p *form.Paginator) ([]*FriendOrFollower, error)
+	IsFollowing(ID users.UserID, otherID users.UserID) (bool, error)
 }
 
 type Writer interface {
-	FollowOrUnfollowUser(ID string, otherID string) error
+	FollowOrUnfollowUser(ID users.UserID, otherID users.UserID) error
 }
 
 type Repository interface {

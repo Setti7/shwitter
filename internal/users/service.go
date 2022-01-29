@@ -10,11 +10,11 @@ import (
 )
 
 type Service interface {
-	Find(ID string) (*User, error)
-	FindProfile(ID string) (*UserProfile, error)
+	Find(ID UserID) (*User, error)
+	FindProfile(ID UserID) (*UserProfile, error)
 
 	Register(f *CreateUserForm) (*User, error)
-	Auth(username string, password string) (userID string, err error)
+	Auth(username string, password string) (userID UserID, err error)
 
 	// ForgotPassword(f *User) error
 	// ChangePassword(user *User, password string) error
@@ -29,11 +29,11 @@ func NewService(r Repository, l *redislock.Client) Service {
 	return &svc{repo: r, lock: l}
 }
 
-func (s *svc) Find(ID string) (*User, error) {
+func (s *svc) Find(ID UserID) (*User, error) {
 	return s.repo.Find(ID)
 }
 
-func (s *svc) FindProfile(ID string) (*UserProfile, error) {
+func (s *svc) FindProfile(ID UserID) (*UserProfile, error) {
 	return s.repo.FindProfile(ID)
 }
 
@@ -67,7 +67,7 @@ func (s *svc) Register(f *CreateUserForm) (*User, error) {
 	return user, nil
 }
 
-func (s *svc) Auth(username string, password string) (string, error) {
+func (s *svc) Auth(username string, password string) (UserID, error) {
 	userID, creds, err := s.repo.FindCredentialsByUsername(username)
 	if err != nil {
 		return "", ErrFailedAuth

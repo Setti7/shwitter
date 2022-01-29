@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/Setti7/shwitter/internal/session"
+	"github.com/Setti7/shwitter/internal/users"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,7 +23,7 @@ func SessionMiddleware(svc session.Service) gin.HandlerFunc {
 				return
 			}
 
-			userID, sessID := tokenParts[0], tokenParts[1]
+			userID, sessID := users.UserID(tokenParts[0]), tokenParts[1]
 			sess, err := svc.Find(userID, sessID)
 
 			if err != nil {

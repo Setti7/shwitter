@@ -3,11 +3,22 @@ package users
 import (
 	"time"
 
+	"github.com/gocql/gocql"
 	"golang.org/x/crypto/bcrypt"
 )
 
+type UserID string
+
+func (u UserID) MarshalCQL(info gocql.TypeInfo) ([]byte, error) {
+	b, err := gocql.ParseUUID(string(u))
+	if err != nil {
+		return nil, err
+	}
+	return b[:], nil
+}
+
 type User struct {
-	ID       string    `json:"id"` // TODO use custom type UserID
+	ID       UserID    `json:"id"`
 	Username string    `json:"username"`
 	Name     string    `json:"name"`
 	Email    string    `json:"email,omitempty"`

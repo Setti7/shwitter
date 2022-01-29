@@ -7,11 +7,11 @@ import (
 )
 
 type Shweet struct {
-	ID        string      `json:"id"` // TODO use ShweetID as type
-	UserID    string      `json:"-"` // TODO use UserID as type
-	Message   string      `json:"message"`
-	User      *users.User `json:"user,omitempty"`
-	CreatedAt time.Time   `json:"created_at"`
+	ID        string       `json:"id"` // TODO use ShweetID as type
+	UserID    users.UserID `json:"-"`  // TODO use UserID as type
+	Message   string       `json:"message"`
+	User      *users.User  `json:"user,omitempty"`
+	CreatedAt time.Time    `json:"created_at"`
 }
 
 type ShweetDetail struct {

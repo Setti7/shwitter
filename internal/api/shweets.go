@@ -6,13 +6,14 @@ import (
 	"github.com/Setti7/shwitter/internal/errors"
 	"github.com/Setti7/shwitter/internal/middleware"
 	"github.com/Setti7/shwitter/internal/shweets"
+	"github.com/Setti7/shwitter/internal/users"
 	"github.com/Setti7/shwitter/internal/util"
 	"github.com/gin-gonic/gin"
 )
 
 func getShweet(svc shweets.Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := ""
+		var userID users.UserID
 
 		user, ok := middleware.GetUserFromCtx(c)
 		if ok {

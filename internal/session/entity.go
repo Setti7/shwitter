@@ -5,13 +5,15 @@ import (
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/Setti7/shwitter/internal/users"
 )
 
 type Session struct {
-	ID         string    `json:"id"` // TODO use SessionID as type and UserID
-	UserID     string    `json:"user_id"`
-	Expiration time.Time `json:"expiration"`
-	Token      string    `json:"token"`
+	ID         string       `json:"id"` // TODO use SessionID as type and UserID
+	UserID     users.UserID `json:"user_id"`
+	Expiration time.Time    `json:"expiration"`
+	Token      string       `json:"token"`
 }
 
 func (s *Session) IsExpired() bool {
@@ -19,7 +21,7 @@ func (s *Session) IsExpired() bool {
 }
 
 func (s *Session) CreateToken() {
-	s.Token = s.UserID + ":" + s.ID
+	s.Token = string(s.UserID) + ":" + s.ID
 }
 
 func NewID() string {
@@ -31,4 +33,3 @@ func NewID() string {
 
 	return fmt.Sprintf("%x", b)
 }
-

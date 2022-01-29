@@ -24,7 +24,7 @@ func getCurrentUser() gin.HandlerFunc {
 
 func getUserByID(svc users.Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		user, err := svc.Find(c.Param("id"))
+		user, err := svc.Find(users.UserID(c.Param("id")))
 
 		if err == errors.ErrNotFound || err == errors.ErrInvalidID {
 			util.AbortResponseNotFound(c)
@@ -38,7 +38,7 @@ func getUserByID(svc users.Service) gin.HandlerFunc {
 
 func getUserProfile(svc users.Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		profile, err := svc.FindProfile(c.Param("id"))
+		profile, err := svc.FindProfile(users.UserID(c.Param("id")))
 
 		if err == errors.ErrNotFound || err == errors.ErrInvalidID {
 			util.AbortResponseNotFound(c)

@@ -1,13 +1,13 @@
 package users
 
 type Reader interface {
-	Find(ID string) (*User, error)
-	FindProfile(ID string) (*UserProfile, error)
-	EnrichUsers(IDs []string) (map[string]*User, error)
-	FindCredentialsByUsername(username string) (userID string, creds *Credentials, err error)
-	IncrementFollowers(ID string, change int) error
-	IncrementFriends(ID string, change int) error
-	IncrementShweets(ID string, change int) error
+	Find(ID UserID) (*User, error)
+	FindProfile(ID UserID) (*UserProfile, error)
+	EnrichUsers(IDs []UserID) (map[UserID]*User, error)
+	FindCredentialsByUsername(username string) (userID UserID, creds *Credentials, err error)
+	IncrementFollowers(ID UserID, change int) error
+	IncrementFriends(ID UserID, change int) error
+	IncrementShweets(ID UserID, change int) error
 }
 
 type Writer interface {

@@ -7,6 +7,7 @@ import (
 	"github.com/Setti7/shwitter/internal/middleware"
 	"github.com/Setti7/shwitter/internal/shweets"
 	"github.com/Setti7/shwitter/internal/timeline"
+	"github.com/Setti7/shwitter/internal/users"
 	"github.com/Setti7/shwitter/internal/util"
 	"github.com/gin-gonic/gin"
 )
@@ -53,14 +54,13 @@ func getTimeline(svc timeline.Service) gin.HandlerFunc {
 
 func getUserline(svc timeline.Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var currentUserID string
+		var currentUserID users.UserID
 		currentUser, ok := middleware.GetUserFromCtx(c)
 		if ok {
 			currentUserID = currentUser.ID
 		}
 
-		userID := c.Param("id")
-
+		userID := users.UserID(c.Param("id"))
 		tl, err := svc.GetUserlineFor(userID, currentUserID)
 		if err != nil {
 			util.AbortResponseUnexpectedError(c)
