@@ -23,8 +23,8 @@ func NewCassandraRepository(sess *gocql.Session, usersRepo users.Repository) Rep
 //
 // Returns ErrInvalidID if the ID is empty, ErrNotFound if the shweet was not found and ErrUnexpected
 // for any other errors.
-func (r *repo) find(ID string) (*Shweet, error) {
-	uuid, err := gocql.ParseUUID(ID)
+func (r *repo) find(ID ShweetID) (*Shweet, error) {
+	uuid, err := gocql.ParseUUID(string(ID))
 	if err != nil {
 		return nil, errors.ErrInvalidID
 	}
@@ -40,7 +40,7 @@ func (r *repo) find(ID string) (*Shweet, error) {
 	}
 
 	shweet := &Shweet{
-		ID:        m["id"].(gocql.UUID).String(),
+		ID:        ShweetID(m["id"].(gocql.UUID).String()),
 		UserID:    users.UserID(m["user_id"].(gocql.UUID).String()),
 		Message:   m["message"].(string),
 		CreatedAt: m["created_at"].(time.Time),
@@ -58,7 +58,7 @@ func (r *repo) find(ID string) (*Shweet, error) {
 //
 // Returns ErrInvalidID if the ID is empty, ErrNotFound if the shweet was not found and ErrUnexpected
 // for any other errors.
-func (r *repo) FindWithDetail(ID string, userID users.UserID) (*ShweetDetail, error) {
+func (r *repo) FindWithDetail(ID ShweetID, userID users.UserID) (*ShweetDetail, error) {
 	shweet, err := r.find(ID)
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func (r *repo) Create(f *CreateShweetForm, userID users.UserID) (*Shweet, error)
 
 	// Create the shweet
 	shweet := &Shweet{
-		ID:        uuid.String(),
+		ID:        ShweetID(uuid.String()),
 		UserID:    users.UserID(userID),
 		Message:   f.Message,
 		CreatedAt: time.Now(),
@@ -116,7 +116,7 @@ func (r *repo) Create(f *CreateShweetForm, userID users.UserID) (*Shweet, error)
 //
 // Returns ErrInvalidID for invalid IDs, ErrNotFound if the shweet does not exist or ErrUnexpected
 // for any other errors.
-func (r *repo) LikeOrUnlike(ID string, userID users.UserID) error {
+func (r *repo) LikeOrUnlike(ID ShweetID, userID users.UserID) error {
 	if userID == "" || ID == "" {
 		return errors.ErrInvalidID
 	}
@@ -180,7 +180,7 @@ func (r *repo) LikeOrUnlike(ID string, userID users.UserID) error {
 // Check if a user liked a given shweet.
 //
 // Returns ErrInvalidID if any of the IDs are empty.
-func (r *repo) isLikedBy(ID string, userID users.UserID) (bool, error) {
+func (r *repo) isLikedBy(ID ShweetID, userID users.UserID) (bool, error) {
 	if userID == "" || ID == "" {
 		return false, errors.ErrInvalidID
 	}
@@ -257,10 +257,10 @@ func (r *repo) enrichWithStatuses(shweets []*ShweetDetail, userID users.UserID) 
 		return nil
 	}
 
-	shweetMap := make(map[string]*ShweetDetail)
+	shweetMap := make(map[ShweetID]*ShweetDetail)
 
 	// Get a list of the shweet IDs and populate a map with the shweets
-	shweetIDs := make([]string, len(shweets))
+	shweetIDs := make([]ShweetID, len(shweets))
 	for index, shweet := range shweets {
 		// by default shweets are not liked or reshweeted
 		shweetIDs[index] = shweet.ID
@@ -273,7 +273,7 @@ func (r *repo) enrichWithStatuses(shweets []*ShweetDetail, userID users.UserID) 
 		"SELECT shweet_id FROM shweet_liked_by_users WHERE shweet_id IN ? AND user_id = ?",
 		shweetIDs, userID).Iter()
 	for iterable.MapScan(m) {
-		shweetID := m["shweet_id"].(gocql.UUID).String()
+		shweetID := ShweetID(m["shweet_id"].(gocql.UUID).String())
 		// set liked = true for all shweets that were found
 		shweetMap[shweetID].Liked = true
 
@@ -305,10 +305,10 @@ func (r *repo) enrichWithCounters(shweets []*Shweet) ([]*ShweetDetail, error) {
 		return []*ShweetDetail{}, nil
 	}
 
-	shweetMap := make(map[string]*ShweetDetail)
+	shweetMap := make(map[ShweetID]*ShweetDetail)
 
 	// Get a list of the shweet IDs and populate a map with the shweets
-	shweetIDs := make([]string, len(shweets))
+	shweetIDs := make([]ShweetID, len(shweets))
 	for index, shweet := range shweets {
 		shweetIDs[index] = shweet.ID
 		shweetMap[shweet.ID] = &ShweetDetail{Shweet: *shweet}
@@ -317,7 +317,7 @@ func (r *repo) enrichWithCounters(shweets []*Shweet) ([]*ShweetDetail, error) {
 	m := map[string]interface{}{}
 	iterable := r.sess.Query("SELECT id, likes, reshweets, comments FROM shweet_counters WHERE id IN ?", shweetIDs).Iter()
 	for iterable.MapScan(m) {
-		shweetID := m["id"].(gocql.UUID).String()
+		shweetID := ShweetID(m["id"].(gocql.UUID).String())
 
 		shweetMap[shweetID].LikeCount = int(m["likes"].(int64))
 		shweetMap[shweetID].CommentCount = int(m["comments"].(int64))
@@ -348,7 +348,7 @@ const (
 	commentsCounter  counter = "comments"
 )
 
-func (r *repo) incrementCounter(ID string, change int, c counter) error {
+func (r *repo) incrementCounter(ID ShweetID, change int, c counter) error {
 	if ID == "" {
 		return errors.ErrInvalidID
 	}

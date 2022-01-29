@@ -74,7 +74,7 @@ func (r *repo) getLineForUser(userID users.UserID, currentUserID users.UserID, l
 	m := map[string]interface{}{}
 	for iterable.MapScan(m) {
 		shweets = append(shweets, &s.Shweet{
-			ID:        m["shweet_id"].(gocql.UUID).String(),
+			ID:        s.ShweetID(m["shweet_id"].(gocql.UUID).String()),
 			UserID:    users.UserID(m["posted_by"].(gocql.UUID).String()),
 			Message:   m["shweet_message"].(string),
 			CreatedAt: m["created_at"].(time.Time),

@@ -4,11 +4,22 @@ import (
 	"time"
 
 	"github.com/Setti7/shwitter/internal/users"
+	"github.com/gocql/gocql"
 )
 
+type ShweetID string
+
+func (u ShweetID) MarshalCQL(info gocql.TypeInfo) ([]byte, error) {
+	b, err := gocql.ParseUUID(string(u))
+	if err != nil {
+		return nil, err
+	}
+	return b[:], nil
+}
+
 type Shweet struct {
-	ID        string       `json:"id"` // TODO use ShweetID as type
-	UserID    users.UserID `json:"-"`  // TODO use UserID as type
+	ID        ShweetID     `json:"id"`
+	UserID    users.UserID `json:"-"`
 	Message   string       `json:"message"`
 	User      *users.User  `json:"user,omitempty"`
 	CreatedAt time.Time    `json:"created_at"`
