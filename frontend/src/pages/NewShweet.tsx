@@ -10,7 +10,7 @@ import {
   Button,
   Snackbar,
 } from "@mui/material";
-import { useContext, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { AuthContext } from "../contexts/auth";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate } from "react-router-dom";
@@ -53,13 +53,27 @@ const NewShweetPage = () => {
         setErrors(result.getError());
         setStatus(result.getFormattedStatus());
       } else {
-          // TODO: on success, animate a screen of success and the go to the refreshed home page
+        // TODO: on success, animate a screen of success and the go to the refreshed home page
         navigate(-1);
       }
 
       setSubmitting(false);
     },
   });
+
+  const keydownHandler = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Enter" && e.ctrlKey) {
+        formik.submitForm();
+      }
+    },
+    [formik]
+  );
+
+  useEffect(() => {
+    window.addEventListener("keydown", keydownHandler);
+    return () => window.removeEventListener("keydown", keydownHandler);
+  }, [keydownHandler]);
 
   if (user === undefined) {
     return <></>;
