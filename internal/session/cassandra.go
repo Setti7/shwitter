@@ -61,7 +61,7 @@ func (r *repo) ListForUser(userID users.UserID) ([]*Session, error) {
 	m := map[string]interface{}{}
 	for iterator.MapScan(m) {
 		sess := Session{
-			ID:         SessionID(m["id"].(string)),
+			ID:         SessionID(m["id"].(gocql.UUID).String()),
 			UserID:     userID,
 			Expiration: m["expiration"].(time.Time),
 		}
