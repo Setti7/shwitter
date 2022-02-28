@@ -7,8 +7,13 @@ import (
 
 	"github.com/Setti7/shwitter/internal/api"
 	"github.com/Setti7/shwitter/internal/config"
+	"github.com/Setti7/shwitter/internal/follow"
 	"github.com/Setti7/shwitter/internal/middleware"
 	"github.com/Setti7/shwitter/internal/service"
+	"github.com/Setti7/shwitter/internal/session"
+	"github.com/Setti7/shwitter/internal/shweets"
+	"github.com/Setti7/shwitter/internal/timeline"
+	"github.com/Setti7/shwitter/internal/users"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/urfave/cli/v2"
@@ -29,6 +34,27 @@ func startAction(ctx *cli.Context) error {
 	service.Init()
 	defer service.CleanUp()
 
+	cass := service.Cassandra()
+	lock := service.Lock()
+
+	usersRepo := users.NewCassandraRepository(cass)
+	usersService := users.NewService(usersRepo, lock)
+
+	sessRepo := session.NewCassandraRepository(cass)
+	sessService := session.NewService(sessRepo, usersService)
+
+	// TODO instead of using userRepo on followRepo, we should use userSvc in followService
+	followRepo := follow.NewCassandraRepository(cass, usersRepo)
+	followService := follow.NewService(followRepo)
+
+	// TODO instead of using userRepo on shweetRepo, we should use userSvc in shweetService
+	shweetRepo := shweets.NewCassandraRepository(cass, usersRepo)
+	shweetService := shweets.NewService(shweetRepo)
+
+	// TODO instead of using userRepo and shweetRepo on timelineRepo, we should use userSvc and shweetSvc in timelineService
+	timelineRepo := timeline.NewCassandraRepository(cass, usersRepo, shweetRepo)
+	timelineService := timeline.NewService(timelineRepo, shweetService)
+
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
@@ -37,40 +63,23 @@ func startAction(ctx *cli.Context) error {
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
-	r.Use(middleware.SessionMiddleware())
+	r.Use(middleware.SessionMiddleware(sessService))
+	r.Use(middleware.UserMiddleware(usersService))
 
 	r.GET("/healthz", heartbeat)
 
-	r.POST("/shweets", api.CreateShweet)
-	r.GET("/shweets", api.ListShweets)
-	r.GET("/shweets/:id", api.GetShweet)
-	r.POST("/shweets/:id/like", api.LikeOrUnlikeShweet)
+	api.MakeUsersHandlers(r, usersService)
+	api.MakeTimelineHandlers(r, timelineService)
+	api.MakeShweetsHandlers(r, shweetService)
+	api.MakeSessionHandlers(r, sessService)
+	api.MakeFollowHandlers(r, followService)
 
 	// TODO: add tests, interface and channels
-	r.GET("/users", api.ListUsers)
-	r.GET("/users/:id", api.GetUser)
-	r.GET("/users/:id/profile", api.GetUserProfile)
-	r.POST("/users", api.CreateUser)
-	r.GET("/users/me", api.GetCurrentUser)
-
-	r.GET("/users/:id/follow", api.IsFollowingUser)
-	r.POST("/users/:id/follow", api.FollowOrUnfollowUser)
-	r.GET("/users/:id/followers", api.ListFriendsOrFollowers(false))
-	r.GET("/users/:id/friends", api.ListFriendsOrFollowers(true))
-
-	r.POST("/sessions", api.CreateSession)
-	r.DELETE("/sessions/:id", api.DeleteSession)
-	r.GET("/sessions", api.ListUserSessions)
-
-	r.GET("/timeline", api.GetTimelineForCurrentUser)
-	r.GET("/userline/:id", api.GetUserLine)
-
 	// add mentions, then add mentions notifications
 	// add chat, after notifications
 	// add api rate limiter = 60/min guest 100/min logged
 
 	log.Fatal(r.Run())
-
 	return nil
 }
 

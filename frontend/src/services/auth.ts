@@ -1,6 +1,6 @@
 import ApiError from "../models/errors/ApiError";
 import AuthError from "../models/errors/AuthError";
-import Session from "../models/session";
+import Session, { getSessionID } from "../models/session";
 import User from "../models/user";
 import { genericApiError, handleApiError } from "../utils/api";
 import { apiService } from "./api";
@@ -15,12 +15,23 @@ export const login = async (
   const api = await apiService.getExecutor();
 
   try {
-    const response = await api.post("sessions", {
+    const response = await api.post("v1/sessions", {
       username,
       password,
     });
     const sess: Session = response.data["data"];
     return sess;
+  } catch (error) {
+    return handleApiError(error) ?? genericApiError;
+  }
+};
+
+export const logout = async (session: Session): Promise<void | ApiError> => {
+  const api = await apiService.getExecutor();
+  console.log('sess id:', getSessionID(session));
+
+  try {
+    await api.delete("v1/sessions/" + getSessionID(session));
   } catch (error) {
     return handleApiError(error) ?? genericApiError;
   }
@@ -42,7 +53,7 @@ export const createUser = async ({
   const api = await apiService.getExecutor();
 
   try {
-    const response = await api.post("users", {
+    const response = await api.post("v1/users", {
       username,
       name,
       email,

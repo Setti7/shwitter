@@ -1,38 +1,46 @@
-package query
+package session
 
 import (
-	"github.com/Setti7/shwitter/internal/entity"
 	"github.com/Setti7/shwitter/internal/errors"
 	"github.com/Setti7/shwitter/internal/log"
-	"github.com/Setti7/shwitter/internal/service"
-	"github.com/Setti7/shwitter/internal/session"
+	"github.com/Setti7/shwitter/internal/users"
 	"github.com/gocql/gocql"
 
 	"time"
 )
 
+type repo struct {
+	cass *gocql.Session
+}
+
+func NewCassandraRepository(cass *gocql.Session) Repository {
+	return &repo{cass: cass}
+}
+
 // Get the session by its composite ID
 //
 // Returns ErrInvalidID if any of the given IDs are empty, ErrNotFound if the session was not found and ErrUnexpected
 // for any other errors.
-func GetSession(userID string, sessID string) (sess entity.Session, err error) {
+func (r *repo) Find(userID users.UserID, sessID SessionID) (*Session, error) {
 	if userID == "" || sessID == "" {
-		return sess, errors.ErrInvalidID
+		return nil, errors.ErrInvalidID
 	}
 
 	query := "SELECT id, user_id, expiration FROM sessions WHERE user_id=? AND id=? LIMIT 1"
 	m := map[string]interface{}{}
-	err = service.Cassandra().Query(query, userID, sessID).MapScan(m)
+	err := r.cass.Query(query, userID, sessID).MapScan(m)
 	if err == gocql.ErrNotFound {
-		return sess, errors.ErrNotFound
+		return nil, errors.ErrNotFound
 	} else if err != nil {
 		log.LogError("query.GetSession", "Could not get session", err)
-		return sess, errors.ErrUnexpected
+		return nil, errors.ErrUnexpected
 	}
 
-	sess.ID = sessID
-	sess.UserID = userID
-	sess.Expiration = m["expiration"].(time.Time)
+	sess := &Session{
+		ID:         sessID,
+		UserID:     userID,
+		Expiration: m["expiration"].(time.Time),
+	}
 
 	return sess, nil
 }
@@ -40,20 +48,20 @@ func GetSession(userID string, sessID string) (sess entity.Session, err error) {
 // Get all sessions for a given user
 //
 // Returns ErrInvalidID if the userID is empty and ErrUnexpected for any other errors.
-func ListSessionsForUser(userID string) ([]*entity.Session, error) {
+func (r *repo) ListForUser(userID users.UserID) ([]*Session, error) {
 	if userID == "" {
 		return nil, errors.ErrInvalidID
 	}
 
 	query := "SELECT id, user_id, expiration FROM sessions WHERE user_id=?"
-	iterator := service.Cassandra().Query(query, userID).Iter()
+	iterator := r.cass.Query(query, userID).Iter()
 
-	sessions := make([]*entity.Session, 0, iterator.NumRows())
+	sessions := make([]*Session, 0, iterator.NumRows())
 
 	m := map[string]interface{}{}
 	for iterator.MapScan(m) {
-		sess := entity.Session{
-			ID:         m["id"].(string),
+		sess := Session{
+			ID:         SessionID(m["id"].(gocql.UUID).String()),
 			UserID:     userID,
 			Expiration: m["expiration"].(time.Time),
 		}
@@ -74,24 +82,26 @@ func ListSessionsForUser(userID string) ([]*entity.Session, error) {
 // Create a session for userID. Make sure the given userID exists.
 //
 // Returns ErrInvalidID if the ID is empty and ErrUnexpected for any other errors.
-func CreateSession(userID string) (sess entity.Session, err error) {
+func (r *repo) CreateForUser(userID users.UserID) (*Session, error) {
 	if userID == "" {
-		return sess, errors.ErrInvalidID
+		return nil, errors.ErrInvalidID
 	}
 
-	id := session.NewID()
+	uuid, _ := gocql.RandomUUID()
 	expiration := time.Now().Add(time.Hour * 24 * 90) // Session expires in 90 days
 
-	if err = service.Cassandra().Query(
+	if err := r.cass.Query(
 		"INSERT INTO sessions (id, user_id, expiration) VALUES (?, ?, ?)",
-		id, userID, expiration).Exec(); err != nil {
+		uuid, userID, expiration).Exec(); err != nil {
 		log.LogError("query.CreateSession", "Could not create session", err)
-		return sess, errors.ErrUnexpected
+		return nil, errors.ErrUnexpected
 	}
 
-	sess.ID = id
-	sess.UserID = userID
-	sess.Expiration = expiration
+	sess := &Session{
+		ID:         SessionID(uuid.String()),
+		UserID:     userID,
+		Expiration: expiration,
+	}
 	sess.CreateToken()
 
 	return sess, nil
@@ -100,15 +110,31 @@ func CreateSession(userID string) (sess entity.Session, err error) {
 // Delete a session
 //
 // Returns ErrInvalidID if any of the IDs are empty and ErrUnexpected for any other errors.
-func DeleteSession(userID string, sessID string) (err error) {
+func (r *repo) Delete(userID users.UserID, sessID SessionID) (err error) {
 	if userID == "" || sessID == "" {
 		return errors.ErrInvalidID
 	}
 
-	query := "DELETE FROM sessions WHERE user_id=? AND id=?"
-	err = service.Cassandra().Query(query, userID, sessID).Exec()
+	err = r.cass.Query("DELETE FROM sessions WHERE user_id = ? AND id = ?", userID, sessID).Exec()
 	if err != nil {
 		log.LogError("query.DeleteSession", "Could not delete session", err)
+		return errors.ErrUnexpected
+	}
+
+	return nil
+}
+
+// Delete all sessions for a given user.
+//
+// Returns ErrInvalidID if the userID is empty and ErrUnexpected for any other errors.
+func (r *repo) DeleteAllForUser(userID users.UserID) (err error) {
+	if userID == "" {
+		return errors.ErrInvalidID
+	}
+
+	err = r.cass.Query("DELETE FROM sessions WHERE user_id = ?", userID).Exec()
+	if err != nil {
+		log.LogError("query.DeleteAllForUser", "Could not delete sessions for user", err)
 		return errors.ErrUnexpected
 	}
 

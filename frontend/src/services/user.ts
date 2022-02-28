@@ -7,7 +7,7 @@ export const getUser = async (id?: string): Promise<User | ApiError> => {
   const api = await apiService.getExecutor();
 
   try {
-    const response = await api.get("users/" + (id === undefined ? "me" : id));
+    const response = await api.get("v1/users/" + (id === undefined ? "me" : id));
     return response.data["data"];
   } catch (error) {
     return handleApiError(error) ?? genericApiError;
@@ -21,7 +21,7 @@ export const getUserProfile = async (
 
   try {
     const response = await api.get(
-      "users/" + (id === undefined ? "me" : id) + "/profile"
+      "v1/users/" + (id === undefined ? "me" : id) + "/profile"
     );
     return response.data["data"];
   } catch (error) {
@@ -35,7 +35,7 @@ export const getIsFollowing = async (
   const api = await apiService.getExecutor();
 
   try {
-    const response = await api.get("users/" + id + "/follow");
+    const response = await api.get("v1/users/" + id + "/follow");
     return response.data["data"];
   } catch (error) {
     return handleApiError(error) ?? genericApiError;
@@ -48,7 +48,7 @@ export const getFollowers = async (
   const api = await apiService.getExecutor();
 
   try {
-    const response = await api.get("users/" + id + "/followers");
+    const response = await api.get("v1/users/" + id + "/followers");
     return response.data["data"];
   } catch (error) {
     return handleApiError(error) ?? genericApiError;
@@ -61,7 +61,7 @@ export const getFriends = async (
   const api = await apiService.getExecutor();
 
   try {
-    const response = await api.get("users/" + id + "/friends");
+    const response = await api.get("v1/users/" + id + "/friends");
     return response.data["data"];
   } catch (error) {
     return handleApiError(error) ?? genericApiError;
@@ -72,7 +72,7 @@ export const followOrUnfollowUser = async (id: string): Promise<undefined | ApiE
   const api = await apiService.getExecutor();
 
   try {
-    await api.post("users/" + id + "/follow");
+    await api.post("v1/users/" + id + "/follow");
     return;
   } catch (error) {
     return handleApiError(error) ?? genericApiError;

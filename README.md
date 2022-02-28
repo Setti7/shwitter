@@ -12,7 +12,7 @@ The easiest way of setting up your local development environment is by using doc
 docker-compose, just run `make up` to start the dependencies for the local server.
 
 While waiting for the docker images to download, run `make build` to build the go backend. When completed, execute
-`./shwitter setup` to finalize setting up the local environment.   
+`./shwitter setup` to finalize setting up the local environment.  
 After it succeeds, run `./shwitter start` to start the server with the default configuration.
 
 To checkout more commands or help with each command, just run `./shwitter help`.
@@ -27,3 +27,6 @@ it installed already, please go to
 
 To create new database migrations, use `make create-migration name=$MIGRATION_NAME`.
 
+### Project Architecture
+
+The golang code structure is heavily based on (this)[https://github.com/eminetto/clean-architecture-go].

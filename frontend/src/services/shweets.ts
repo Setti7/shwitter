@@ -15,7 +15,7 @@ export const createShweet = async ({
   const api = await apiService.getExecutor();
 
   try {
-    const response = await api.post("shweets", { message });
+    const response = await api.post("v1/timeline", { message });
     return response.data["data"];
   } catch (error) {
     return handleApiError(error) ?? genericApiError;
@@ -28,7 +28,7 @@ export const getShweetDetails = async (
   const api = await apiService.getExecutor();
 
   try {
-    const response = await api.get("shweets/" + shweetId);
+    const response = await api.get("v1/shweets/" + shweetId);
     return response.data["data"];
   } catch (error) {
     return handleApiError(error) ?? genericApiError;
@@ -39,7 +39,7 @@ export const getTimeline = async (): Promise<Timeline | ApiError> => {
   const api = await apiService.getExecutor();
 
   try {
-    const response = await api.get("timeline");
+    const response = await api.get("v1/timeline");
     return response.data["data"];
   } catch (error) {
     return handleApiError(error) ?? genericApiError;
@@ -50,7 +50,7 @@ export const getUserline = async (id: string): Promise<Timeline | ApiError> => {
   const api = await apiService.getExecutor();
 
   try {
-    const response = await api.get("userline/" + id);
+    const response = await api.get("v1/userline/" + id);
     return response.data["data"];
   } catch (error) {
     return handleApiError(error) ?? genericApiError;
@@ -61,7 +61,7 @@ export const likeShweet = async (shweetID: ShweetID): Promise<ShweetID | ApiErro
   const api = await apiService.getExecutor();
 
   try {
-    const response = await api.post("shweets/" + shweetID + "/like");
+    const response = await api.post("v1/shweets/" + shweetID + "/like");
     return response.data["data"];
   } catch (error) {
     return handleApiError(error) ?? genericApiError;

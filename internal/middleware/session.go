@@ -1,18 +1,18 @@
 package middleware
 
 import (
-	"github.com/Setti7/shwitter/internal/query"
-	"github.com/Setti7/shwitter/internal/util"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strings"
+
+	"github.com/Setti7/shwitter/internal/session"
+	"github.com/Setti7/shwitter/internal/users"
+	"github.com/gin-gonic/gin"
 )
 
 const SESSION_HEADER = "X-Session-Token"
-const USER_KEY = "user"
 const SESSION_KEY = "session"
 
-func SessionMiddleware() gin.HandlerFunc {
+func SessionMiddleware(svc session.Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		sessToken := c.GetHeader(SESSION_HEADER)
 
@@ -23,10 +23,8 @@ func SessionMiddleware() gin.HandlerFunc {
 				return
 			}
 
-			userID := tokenParts[0]
-			sessID := tokenParts[1]
-
-			sess, err := query.GetSession(userID, sessID)
+			userID, sessID := users.UserID(tokenParts[0]), session.SessionID(tokenParts[1])
+			sess, err := svc.Find(userID, sessID)
 
 			if err != nil {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "This session was not found."})
@@ -37,16 +35,18 @@ func SessionMiddleware() gin.HandlerFunc {
 			}
 
 			c.Set(SESSION_KEY, sess)
-
-			user, err := query.GetUserByID(sess.UserID)
-			if err != nil {
-				util.AbortResponseUnexpectedError(c)
-				return
-			}
-
-			c.Set(USER_KEY, user)
 		}
 
 		c.Next()
+	}
+}
+
+func GetSessionFromCtx(c *gin.Context) (*session.Session, bool) {
+	sess, ok := c.Get(SESSION_KEY)
+
+	if ok {
+		return sess.(*session.Session), true
+	} else {
+		return nil, false
 	}
 }
