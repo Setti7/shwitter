@@ -34,19 +34,25 @@ func startAction(ctx *cli.Context) error {
 	service.Init()
 	defer service.CleanUp()
 
-	usersRepo := users.NewCassandraRepository(service.Cassandra())
-	usersService := users.NewService(usersRepo, service.Lock())
+	cass := service.Cassandra()
+	lock := service.Lock()
 
-	sessRepo := session.NewCassandraRepository(service.Cassandra())
+	usersRepo := users.NewCassandraRepository(cass)
+	usersService := users.NewService(usersRepo, lock)
+
+	sessRepo := session.NewCassandraRepository(cass)
 	sessService := session.NewService(sessRepo, usersService)
 
-	followRepo := follow.NewCassandraRepository(service.Cassandra(), usersRepo)
+	// TODO instead of using userRepo on followRepo, we should use userSvc in followService
+	followRepo := follow.NewCassandraRepository(cass, usersRepo)
 	followService := follow.NewService(followRepo)
 
-	shweetRepo := shweets.NewCassandraRepository(service.Cassandra(), usersRepo)
+	// TODO instead of using userRepo on shweetRepo, we should use userSvc in shweetService
+	shweetRepo := shweets.NewCassandraRepository(cass, usersRepo)
 	shweetService := shweets.NewService(shweetRepo)
 
-	timelineRepo := timeline.NewCassandraRepository(service.Cassandra(), usersRepo, shweetRepo)
+	// TODO instead of using userRepo and shweetRepo on timelineRepo, we should use userSvc and shweetSvc in timelineService
+	timelineRepo := timeline.NewCassandraRepository(cass, usersRepo, shweetRepo)
 	timelineService := timeline.NewService(timelineRepo, shweetService)
 
 	r := gin.Default()
