@@ -7,10 +7,21 @@ import (
 	"time"
 
 	"github.com/Setti7/shwitter/internal/users"
+	"github.com/gocql/gocql"
 )
 
+type SessionID string
+
+func (u SessionID) MarshalCQL(info gocql.TypeInfo) ([]byte, error) {
+	b, err := gocql.ParseUUID(string(u))
+	if err != nil {
+		return nil, err
+	}
+	return b[:], nil
+}
+
 type Session struct {
-	ID         string       `json:"id"` // TODO use SessionID as type and UserID
+	ID         SessionID    `json:"id"`
 	UserID     users.UserID `json:"user_id"`
 	Expiration time.Time    `json:"expiration"`
 	Token      string       `json:"token"`
@@ -21,15 +32,15 @@ func (s *Session) IsExpired() bool {
 }
 
 func (s *Session) CreateToken() {
-	s.Token = string(s.UserID) + ":" + s.ID
+	s.Token = string(s.UserID) + ":" + string(s.ID)
 }
 
-func NewID() string {
+func NewID() SessionID {
 	b := make([]byte, 24)
 
 	if _, err := rand.Read(b); err != nil {
 		log.Fatal(err)
 	}
 
-	return fmt.Sprintf("%x", b)
+	return SessionID(fmt.Sprintf("%x", b))
 }

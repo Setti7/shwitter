@@ -6,11 +6,11 @@ import (
 )
 
 type Service interface {
-	Find(userID users.UserID, sessID string) (*Session, error)
+	Find(userID users.UserID, sessID SessionID) (*Session, error)
 	List(userID users.UserID) ([]*Session, error)
 
 	SignIn(LoginForm) (*Session, error)
-	SignOut(userID users.UserID, sessID string) error
+	SignOut(userID users.UserID, sessID SessionID) error
 	SignOutFromAll(userID users.UserID) error
 }
 
@@ -23,7 +23,7 @@ func NewService(r Repository, u users.Service) Service {
 	return &svc{repo: r, usersSvc: u}
 }
 
-func (s *svc) Find(userID users.UserID, sessID string) (*Session, error) {
+func (s *svc) Find(userID users.UserID, sessID SessionID) (*Session, error) {
 	return s.repo.Find(userID, sessID)
 }
 
@@ -49,7 +49,7 @@ func (s *svc) SignIn(f LoginForm) (*Session, error) {
 	return sess, nil
 }
 
-func (s *svc) SignOut(userID users.UserID, sessID string) error {
+func (s *svc) SignOut(userID users.UserID, sessID SessionID) error {
 	return s.repo.Delete(userID, sessID)
 }
 

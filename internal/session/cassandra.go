@@ -21,7 +21,7 @@ func NewCassandraRepository(sess *gocql.Session) Repository {
 //
 // Returns ErrInvalidID if any of the given IDs are empty, ErrNotFound if the session was not found and ErrUnexpected
 // for any other errors.
-func (r *repo) Find(userID users.UserID, sessID string) (*Session, error) {
+func (r *repo) Find(userID users.UserID, sessID SessionID) (*Session, error) {
 	if userID == "" || sessID == "" {
 		return nil, errors.ErrInvalidID
 	}
@@ -61,7 +61,7 @@ func (r *repo) ListForUser(userID users.UserID) ([]*Session, error) {
 	m := map[string]interface{}{}
 	for iterator.MapScan(m) {
 		sess := Session{
-			ID:         m["id"].(string),
+			ID:         SessionID(m["id"].(string)),
 			UserID:     userID,
 			Expiration: m["expiration"].(time.Time),
 		}
@@ -87,18 +87,18 @@ func (r *repo) CreateForUser(userID users.UserID) (*Session, error) {
 		return nil, errors.ErrInvalidID
 	}
 
-	id := NewID()
+	uuid, _ := gocql.RandomUUID()
 	expiration := time.Now().Add(time.Hour * 24 * 90) // Session expires in 90 days
 
 	if err := r.sess.Query(
 		"INSERT INTO sessions (id, user_id, expiration) VALUES (?, ?, ?)",
-		id, userID, expiration).Exec(); err != nil {
+		uuid, userID, expiration).Exec(); err != nil {
 		log.LogError("query.CreateSession", "Could not create session", err)
 		return nil, errors.ErrUnexpected
 	}
 
 	sess := &Session{
-		ID:         id,
+		ID:         SessionID(uuid.String()),
 		UserID:     userID,
 		Expiration: expiration,
 	}
@@ -110,7 +110,7 @@ func (r *repo) CreateForUser(userID users.UserID) (*Session, error) {
 // Delete a session
 //
 // Returns ErrInvalidID if any of the IDs are empty and ErrUnexpected for any other errors.
-func (r *repo) Delete(userID users.UserID, sessID string) (err error) {
+func (r *repo) Delete(userID users.UserID, sessID SessionID) (err error) {
 	if userID == "" || sessID == "" {
 		return errors.ErrInvalidID
 	}

@@ -55,7 +55,7 @@ func deleteSession(svc session.Service) gin.HandlerFunc {
 		}
 
 		sessID := c.Param("id")
-		err := svc.SignOut(user.ID, sessID)
+		err := svc.SignOut(user.ID, session.SessionID(sessID))
 		if err == errors.ErrInvalidID {
 			util.AbortResponseNotFound(c)
 		} else if err != nil {

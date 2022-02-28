@@ -23,7 +23,7 @@ func SessionMiddleware(svc session.Service) gin.HandlerFunc {
 				return
 			}
 
-			userID, sessID := users.UserID(tokenParts[0]), tokenParts[1]
+			userID, sessID := users.UserID(tokenParts[0]), session.SessionID(tokenParts[1])
 			sess, err := svc.Find(userID, sessID)
 
 			if err != nil {
