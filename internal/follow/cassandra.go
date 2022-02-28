@@ -11,12 +11,12 @@ import (
 )
 
 type repo struct {
-	sess      *gocql.Session
+	cass      *gocql.Session
 	usersRepo users.Repository
 }
 
-func NewCassandraRepository(sess *gocql.Session, usersRepo users.Repository) Repository {
-	return &repo{sess: sess, usersRepo: usersRepo}
+func NewCassandraRepository(cass *gocql.Session, usersRepo users.Repository) Repository {
+	return &repo{cass: cass, usersRepo: usersRepo}
 }
 
 func (r *repo) listFriendsOrFollowers(userID users.UserID, useFriendsTable bool, p *form.Paginator) ([]*FriendOrFollower, error) {
@@ -31,7 +31,7 @@ func (r *repo) listFriendsOrFollowers(userID users.UserID, useFriendsTable bool,
 		q = "SELECT follower_id, since FROM followers WHERE user_id = ?"
 	}
 
-	iterable := p.PaginateQuery(r.sess.Query(q, userID)).Iter()
+	iterable := p.PaginateQuery(r.cass.Query(q, userID)).Iter()
 	p.SetResults(iterable)
 	friendOrFollowers := make([]*FriendOrFollower, 0, iterable.NumRows())
 
@@ -102,7 +102,7 @@ func (r *repo) IsFollowing(userID users.UserID, following users.UserID) (bool, e
 	}
 
 	q := "SELECT follower_id FROM followers WHERE user_id = ? AND follower_id = ?"
-	iterable := r.sess.Query(q, following, userID).Iter()
+	iterable := r.cass.Query(q, following, userID).Iter()
 
 	if iterable.NumRows() > 0 {
 		return true, nil
@@ -134,7 +134,7 @@ func (r *repo) FollowOrUnfollowUser(currentUserID users.UserID, otherUserID user
 		return errors.ErrUnexpected
 	}
 
-	batch := r.sess.NewBatch(gocql.LoggedBatch)
+	batch := r.cass.NewBatch(gocql.LoggedBatch)
 
 	if !isFollowing {
 		// From the userID perspective: userID (me) is following otherUserID
@@ -156,7 +156,7 @@ func (r *repo) FollowOrUnfollowUser(currentUserID users.UserID, otherUserID user
 			otherUserID, currentUserID)
 	}
 
-	err = r.sess.ExecuteBatch(batch)
+	err = r.cass.ExecuteBatch(batch)
 	if err != nil {
 		log.LogError("query.FollowOrUnfollowUser", "Could not follow or unfollow user", err)
 		return errors.ErrUnexpected

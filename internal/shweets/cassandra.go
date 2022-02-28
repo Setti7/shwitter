@@ -11,12 +11,12 @@ import (
 )
 
 type repo struct {
-	sess  *gocql.Session
+	cass  *gocql.Session
 	users users.Repository
 }
 
-func NewCassandraRepository(sess *gocql.Session, usersRepo users.Repository) Repository {
-	return &repo{sess: sess, users: usersRepo}
+func NewCassandraRepository(cass *gocql.Session, usersRepo users.Repository) Repository {
+	return &repo{cass: cass, users: usersRepo}
 }
 
 // Get a shweet by its ID. The shweet is enriched.
@@ -31,7 +31,7 @@ func (r *repo) find(ID ShweetID) (*Shweet, error) {
 
 	m := map[string]interface{}{}
 	query := "SELECT id, user_id, message, created_at FROM shweets WHERE id = ? LIMIT 1"
-	err = r.sess.Query(query, uuid).Consistency(gocql.One).MapScan(m)
+	err = r.cass.Query(query, uuid).Consistency(gocql.One).MapScan(m)
 	if err == gocql.ErrNotFound {
 		return nil, errors.ErrNotFound
 	} else if err != nil {
@@ -96,7 +96,7 @@ func (r *repo) Create(f *CreateShweetForm, userID users.UserID) (*Shweet, error)
 		Message:   f.Message,
 		CreatedAt: time.Now(),
 	}
-	err := r.sess.Query("INSERT INTO shweets (id, user_id, message, created_at) VALUES (?, ?, ?, ?)",
+	err := r.cass.Query("INSERT INTO shweets (id, user_id, message, created_at) VALUES (?, ?, ?, ?)",
 		uuid, shweet.UserID, f.Message, shweet.CreatedAt).Exec()
 	if err != nil {
 		log.LogError("query.CreateShweet", "Error creating shweet", err)
@@ -131,7 +131,7 @@ func (r *repo) LikeOrUnlike(ID ShweetID, userID users.UserID) error {
 		return errors.ErrNotFound
 	}
 
-	batch := r.sess.NewBatch(gocql.LoggedBatch)
+	batch := r.cass.NewBatch(gocql.LoggedBatch)
 
 	// Add/remove this shweet to the list of shweets liked by this user
 	if !isLiked {
@@ -155,7 +155,7 @@ func (r *repo) LikeOrUnlike(ID ShweetID, userID users.UserID) error {
 			ID, userID)
 	}
 
-	err = r.sess.ExecuteBatch(batch)
+	err = r.cass.ExecuteBatch(batch)
 	if err != nil {
 		log.LogError("query.likeOrDislikeShweet", "Could not like or dislike shweet", err)
 		return errors.ErrUnexpected
@@ -186,7 +186,7 @@ func (r *repo) isLikedBy(ID ShweetID, userID users.UserID) (bool, error) {
 	}
 
 	q := "SELECT user_id FROM user_liked_shweets WHERE user_id = ? AND shweet_id = ?"
-	iterable := r.sess.Query(q, userID, ID).Iter()
+	iterable := r.cass.Query(q, userID, ID).Iter()
 
 	if iterable.NumRows() > 0 {
 		return true, nil
@@ -269,7 +269,7 @@ func (r *repo) enrichWithStatuses(shweets []*ShweetDetail, userID users.UserID) 
 
 	// Enriching with liked status
 	m := map[string]interface{}{}
-	iterable := r.sess.Query(
+	iterable := r.cass.Query(
 		"SELECT shweet_id FROM shweet_liked_by_users WHERE shweet_id IN ? AND user_id = ?",
 		shweetIDs, userID).Iter()
 	for iterable.MapScan(m) {
@@ -315,7 +315,7 @@ func (r *repo) enrichWithCounters(shweets []*Shweet) ([]*ShweetDetail, error) {
 	}
 
 	m := map[string]interface{}{}
-	iterable := r.sess.Query("SELECT id, likes, reshweets, comments FROM shweet_counters WHERE id IN ?", shweetIDs).Iter()
+	iterable := r.cass.Query("SELECT id, likes, reshweets, comments FROM shweet_counters WHERE id IN ?", shweetIDs).Iter()
 	for iterable.MapScan(m) {
 		shweetID := ShweetID(m["id"].(gocql.UUID).String())
 
@@ -354,7 +354,7 @@ func (r *repo) incrementCounter(ID ShweetID, change int, c counter) error {
 	}
 
 	q := fmt.Sprintf("UPDATE shweet_counters SET %s = %s + ? WHERE id = ?", c, c)
-	err := r.sess.Query(q, change, ID).Exec()
+	err := r.cass.Query(q, change, ID).Exec()
 
 	if err != nil {
 		log.LogError("shweets.incrementCounter", "Could not increment shweet counter", err)

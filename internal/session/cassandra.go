@@ -10,11 +10,11 @@ import (
 )
 
 type repo struct {
-	sess *gocql.Session
+	cass *gocql.Session
 }
 
-func NewCassandraRepository(sess *gocql.Session) Repository {
-	return &repo{sess: sess}
+func NewCassandraRepository(cass *gocql.Session) Repository {
+	return &repo{cass: cass}
 }
 
 // Get the session by its composite ID
@@ -28,7 +28,7 @@ func (r *repo) Find(userID users.UserID, sessID SessionID) (*Session, error) {
 
 	query := "SELECT id, user_id, expiration FROM sessions WHERE user_id=? AND id=? LIMIT 1"
 	m := map[string]interface{}{}
-	err := r.sess.Query(query, userID, sessID).MapScan(m)
+	err := r.cass.Query(query, userID, sessID).MapScan(m)
 	if err == gocql.ErrNotFound {
 		return nil, errors.ErrNotFound
 	} else if err != nil {
@@ -54,7 +54,7 @@ func (r *repo) ListForUser(userID users.UserID) ([]*Session, error) {
 	}
 
 	query := "SELECT id, user_id, expiration FROM sessions WHERE user_id=?"
-	iterator := r.sess.Query(query, userID).Iter()
+	iterator := r.cass.Query(query, userID).Iter()
 
 	sessions := make([]*Session, 0, iterator.NumRows())
 
@@ -90,7 +90,7 @@ func (r *repo) CreateForUser(userID users.UserID) (*Session, error) {
 	uuid, _ := gocql.RandomUUID()
 	expiration := time.Now().Add(time.Hour * 24 * 90) // Session expires in 90 days
 
-	if err := r.sess.Query(
+	if err := r.cass.Query(
 		"INSERT INTO sessions (id, user_id, expiration) VALUES (?, ?, ?)",
 		uuid, userID, expiration).Exec(); err != nil {
 		log.LogError("query.CreateSession", "Could not create session", err)
@@ -115,7 +115,7 @@ func (r *repo) Delete(userID users.UserID, sessID SessionID) (err error) {
 		return errors.ErrInvalidID
 	}
 
-	err = r.sess.Query("DELETE FROM sessions WHERE user_id = ? AND id = ?", userID, sessID).Exec()
+	err = r.cass.Query("DELETE FROM sessions WHERE user_id = ? AND id = ?", userID, sessID).Exec()
 	if err != nil {
 		log.LogError("query.DeleteSession", "Could not delete session", err)
 		return errors.ErrUnexpected
@@ -132,7 +132,7 @@ func (r *repo) DeleteAllForUser(userID users.UserID) (err error) {
 		return errors.ErrInvalidID
 	}
 
-	err = r.sess.Query("DELETE FROM sessions WHERE user_id = ?", userID).Exec()
+	err = r.cass.Query("DELETE FROM sessions WHERE user_id = ?", userID).Exec()
 	if err != nil {
 		log.LogError("query.DeleteAllForUser", "Could not delete sessions for user", err)
 		return errors.ErrUnexpected

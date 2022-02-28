@@ -11,11 +11,11 @@ import (
 )
 
 type repo struct {
-	sess *gocql.Session
+	cass *gocql.Session
 }
 
-func NewCassandraRepository(sess *gocql.Session) Repository {
-	return &repo{sess: sess}
+func NewCassandraRepository(cass *gocql.Session) Repository {
+	return &repo{cass: cass}
 }
 
 // Get a user by its ID.
@@ -29,7 +29,7 @@ func (r *repo) Find(ID UserID) (*User, error) {
 
 	query := "SELECT id, username, email, name, bio, joined_at FROM users WHERE id = ? LIMIT 1"
 	m := map[string]interface{}{}
-	err := r.sess.Query(query, ID).MapScan(m)
+	err := r.cass.Query(query, ID).MapScan(m)
 
 	if err == gocql.ErrNotFound {
 		return nil, errors.ErrNotFound
@@ -71,7 +71,7 @@ func (r *repo) EnrichUsers(IDs []UserID) (map[UserID]*User, error) {
 
 	if len(IDs) > 0 {
 		m := map[string]interface{}{}
-		iterable := r.sess.Query("SELECT id, username, name, bio FROM users WHERE id IN ?", IDs).Iter()
+		iterable := r.cass.Query("SELECT id, username, name, bio FROM users WHERE id IN ?", IDs).Iter()
 		for iterable.MapScan(m) {
 			userID := UserID(m["id"].(gocql.UUID).String())
 			userMap[userID] = &User{
@@ -113,13 +113,13 @@ func (r *repo) CreateUser(f *CreateUserForm) (*User, error) {
 		JoinedAt: time.Now(),
 	}
 
-	batch := r.sess.NewBatch(gocql.LoggedBatch)
+	batch := r.cass.NewBatch(gocql.LoggedBatch)
 	batch.Query("INSERT INTO credentials (username, password, user_id) VALUES (?, ?, ?)",
 		f.Username, hashedPassword, uuid)
 	batch.Query(
 		"INSERT INTO users (id, username, name, email, joined_at) VALUES (?, ?, ?, ?, ?)",
 		user.ID, user.Username, user.Name, user.Email, user.JoinedAt)
-	err = r.sess.ExecuteBatch(batch)
+	err = r.cass.ExecuteBatch(batch)
 
 	if err != nil {
 		log.LogError("query.CreateNewUserWithCredentials", "Error while executing batch operation", err)
@@ -136,7 +136,7 @@ func (r *repo) FindCredentialsByUsername(username string) (UserID, *Credentials,
 	query := "SELECT username, user_id, password FROM credentials WHERE username = ? LIMIT 1"
 	m := map[string]interface{}{}
 
-	err := r.sess.Query(query, username).MapScan(m)
+	err := r.cass.Query(query, username).MapScan(m)
 	if err == gocql.ErrNotFound {
 		return "", nil, errors.ErrNotFound
 	} else if err != nil {
@@ -155,7 +155,7 @@ func (r *repo) FindCredentialsByUsername(username string) (UserID, *Credentials,
 
 func (r *repo) enrichCounters(u *User) (*UserProfile, error) {
 	m := map[string]interface{}{}
-	err := r.sess.Query("SELECT followers, friends, shweets FROM user_counters WHERE id = ?", u.ID).MapScan(m)
+	err := r.cass.Query("SELECT followers, friends, shweets FROM user_counters WHERE id = ?", u.ID).MapScan(m)
 
 	var followers int
 	var friends int
@@ -209,7 +209,7 @@ func (r *repo) incrementCounter(ID UserID, change int, c counter) error {
 	}
 
 	q := fmt.Sprintf("UPDATE user_counters SET %s = %s + ? WHERE id = ?", c, c)
-	err := r.sess.Query(q, change, ID).Exec()
+	err := r.cass.Query(q, change, ID).Exec()
 
 	if err != nil {
 		log.LogError("users.incrementCounter", "Could not increment user counter", err)

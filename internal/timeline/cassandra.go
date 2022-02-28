@@ -12,13 +12,13 @@ import (
 )
 
 type repo struct {
-	sess        *gocql.Session
+	cass        *gocql.Session
 	usersRepo   users.Repository
 	shweetsRepo s.Repository
 }
 
-func NewCassandraRepository(sess *gocql.Session, users users.Repository, shweets s.Repository) Repository {
-	return &repo{sess: sess, usersRepo: users, shweetsRepo: shweets}
+func NewCassandraRepository(cass *gocql.Session, users users.Repository, shweets s.Repository) Repository {
+	return &repo{cass: cass, usersRepo: users, shweetsRepo: shweets}
 }
 
 // Insert a shweet into userlines/timelines/etc.
@@ -68,7 +68,7 @@ func (r *repo) getLineForUser(userID users.UserID, currentUserID users.UserID, l
 	}
 
 	q := fmt.Sprintf("SELECT shweet_id, shweet_message, posted_by, created_at FROM %s WHERE user_id = ?", line)
-	iterable := r.sess.Query(q, userID).Iter()
+	iterable := r.cass.Query(q, userID).Iter()
 	shweets := make([]*s.Shweet, 0, iterable.NumRows())
 
 	m := map[string]interface{}{}
@@ -110,7 +110,7 @@ func (r *repo) insertShweetIntoLine(userID users.UserID, shweet *s.Shweet, line 
 	}
 
 	q := fmt.Sprintf("INSERT INTO %s (user_id, shweet_id, shweet_message, posted_by, created_at) VALUES (?, ?, ?, ?, ?)", line)
-	err := r.sess.Query(q, userID, shweet.ID, shweet.Message, shweet.UserID, shweet.CreatedAt).Exec()
+	err := r.cass.Query(q, userID, shweet.ID, shweet.Message, shweet.UserID, shweet.CreatedAt).Exec()
 	if err != nil {
 		log.LogError("query.InsertShweetIntoLine", "Error while inserting shweet into user timeline", err)
 		return errors.ErrUnexpected
@@ -128,7 +128,7 @@ func (r *repo) bulkInsertShweetIntoFollowersTimelines(userID users.UserID, shwee
 	}
 
 	q := "SELECT follower_id FROM followers WHERE user_id = ?"
-	iterable := r.sess.Query(q, userID).Iter()
+	iterable := r.cass.Query(q, userID).Iter()
 	scanner := iterable.Scanner()
 
 	for scanner.Next() {
