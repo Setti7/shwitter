@@ -23,7 +23,7 @@ enum Status {
 class ApiService {
   private status = Status.Idle;
   private resolvers: ((args0: AxiosInstance) => void)[] = [];
-  private session: Session | undefined;
+  public session: Session | undefined;
 
   api = api;
 

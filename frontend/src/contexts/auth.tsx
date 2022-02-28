@@ -1,16 +1,15 @@
-import React, { createContext, useCallback, useEffect, useState } from 'react';
-import ApiError from '../models/errors/ApiError';
-import AuthError from '../models/errors/AuthError';
-import User from '../models/user';
-import { apiService } from '../services/api';
-import { loadUser, login, saveUser } from '../services/auth';
-import { getUser } from '../services/user';
-
+import React, { createContext, useCallback, useEffect, useState } from "react";
+import ApiError from "../models/errors/ApiError";
+import AuthError from "../models/errors/AuthError";
+import User from "../models/user";
+import { apiService } from "../services/api";
+import { loadUser, login, logout, saveUser } from "../services/auth";
+import { getUser } from "../services/user";
 
 export enum AuthStatus {
-  Loading = 'Loading',
-  Authenticated = 'Authenticated',
-  NotAuthenticated = 'NotAuthenticated'
+  Loading = "Loading",
+  Authenticated = "Authenticated",
+  NotAuthenticated = "NotAuthenticated",
 }
 
 type IAuthFetch = (args0?: { force: boolean }) => Promise<void>;
@@ -18,12 +17,17 @@ type IAuthFetch = (args0?: { force: boolean }) => Promise<void>;
 interface AuthContextData {
   user?: User;
   authStatus: AuthStatus;
-  authLogin: (username: string, password: string) => Promise<AuthError | undefined>;
+  authLogin: (
+    username: string,
+    password: string
+  ) => Promise<AuthError | undefined>;
   authLogout: () => void;
   authFetch: IAuthFetch;
 }
 
-export const AuthContext = createContext<AuthContextData>({} as AuthContextData);
+export const AuthContext = createContext<AuthContextData>(
+  {} as AuthContextData
+);
 
 export const AuthProvider: React.FC = ({ children }) => {
   const [user, setUser] = useState<User | undefined>(undefined);
@@ -48,9 +52,12 @@ export const AuthProvider: React.FC = ({ children }) => {
   };
 
   const authLogin = useCallback(
-    async (username: string, password: string): Promise<ApiError | AuthError | undefined> => {
+    async (
+      username: string,
+      password: string
+    ): Promise<ApiError | AuthError | undefined> => {
       const sessResult = await login(username, password);
-      
+
       if (sessResult instanceof ApiError) {
         return sessResult;
       }
@@ -81,7 +88,11 @@ export const AuthProvider: React.FC = ({ children }) => {
     [authStatus] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  const authLogout = useCallback(() => {
+  const authLogout = useCallback(async () => {
+    if (apiService.session !== undefined) {
+      await logout(apiService.session);
+    }
+
     setAuthStatus(AuthStatus.NotAuthenticated);
     updateUser(undefined);
     apiService.authorize(undefined);
@@ -94,8 +105,9 @@ export const AuthProvider: React.FC = ({ children }) => {
         authStatus,
         authLogin,
         authLogout,
-        authFetch
-      }}>
+        authFetch,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
